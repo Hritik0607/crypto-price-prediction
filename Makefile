@@ -16,15 +16,20 @@
 dev:
 	uv run services/${service}/src/${service}/main.py
 
-build:
+build-for-dev:
 	docker build -t ${service}:dev -f docker/${service}.Dockerfile .
 
-push:
+push-for-dev:
 	kind load docker-image ${service}:dev --name rwml-34fa
 
-deploy: build push
+deploy-for-dev: build-for-dev push-for-dev
 	kubectl delete -f deployments/dev/${service}/${service}.yaml --ignore-not-found=true
 	kubectl apply -f deployments/dev/${service}/${service}.yaml
 
 lint:
 	ruff check . --fix
+
+
+build-and-push-for-prod:
+	export BUILD_DATE=$(date +%s) && \
+	docker buildx build --push --platform linux/amd64 -t ghcr.io/hritik0607/${service}:0.1.5-beta.${BUILD_DATE} -f docker/${service}.Dockerfile .
