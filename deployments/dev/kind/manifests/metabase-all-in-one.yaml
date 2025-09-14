@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metabase
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metabase
+  namespace: metabase
+  labels:
+    app: metabase
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metabase
+  template:
+    metadata:
+      labels:
+        app: metabase
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: metabase
+          image: metabase/metabase:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            # Using H2 for internal Metabase storage
+            - name: MB_DB_TYPE
+              value: "h2"
+            - name: MB_DB_FILE
+              value: "/metabase-data/metabase.db"
+            - name: JAVA_TIMEZONE
+              value: "UTC"
+            - name: JAVA_OPTS
+              value: "-Xmx2g -Xms512m"
+            - name: MB_JETTY_HOST
+              value: "0.0.0.0"
+            - name: MB_ENCRYPTION_SECRET_KEY
+              value: "metabase-encryption-key-for-added-security"
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 120
+            timeoutSeconds: 5
+            failureThreshold: 10
+          volumeMounts:
+            - name: metabase-data
+              mountPath: /metabase-data
+      volumes:
+        - name: metabase-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metabase-lb
+  namespace: metabase
+  labels:
+    app: metabase
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
+  selector:
+    app: metabase 

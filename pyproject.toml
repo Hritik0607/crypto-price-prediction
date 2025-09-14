@@ -1,0 +1,42 @@
+[project]
+name = "crypto-predictor-system"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "candles",
+    "loguru>=0.7.3",
+    "quixstreams>=3.18.1",
+    "trades",
+    "websocket-client>=1.8.0",
+]
+
+[tool.uv.workspace]
+members = [
+    "services/trades",
+    "services/candles",
+]
+
+[tool.uv.sources]
+trades = { workspace = true }
+candles = { workspace = true }
+
+[tool.ruff]
+line-length = 88
+lint.select = [
+    "C",  # mccabe rules
+    "F",  # pyflakes rules
+    "E",  # pycodestyle error rules
+    "W",  # pycodestyle warning rules
+    "B",  # flake8-bugbear rules
+    "I",  # isort rules
+]
+lint.ignore = [
+    "C901",  # max-complexity-10
+    "E501",  # line-too-long
+]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "single"

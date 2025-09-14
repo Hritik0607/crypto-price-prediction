@@ -1,0 +1,20 @@
+{
+    "recommendations": [
+        "ms-vscode-remote.remote-containers",
+        "ms-vscode-remote.remote-ssh",
+        "ms-vscode-remote.remote-ssh-edit",
+        "ms-vscode.remote-explorer",
+        "EditorConfig.EditorConfig",
+        "mikestead.dotenv",
+        "mitchdenny.ecdc",
+        "redhat.vscode-yaml",
+
+        // Taken from https://github.com/mariusrugan/lets-rust-template/blob/main/.vscode/extensions.json
+        // "EditorConfig.editorconfig",
+        // "ms-vscode-remote.remote-containers",
+        // "mikestead.dotenv",
+        "vadimcn.vscode-lldb",
+        // "ms-vscode-remote.remote-ssh",
+        // "tamasfe.even-better-toml"
+    ]
+}
