@@ -1,28 +1,8 @@
 from datetime import datetime
-from typing import List
-from pydantic import BaseModel
 from time import sleep
+from typing import List
 
 from .trade import Trade
-
-
-class Trade(BaseModel):
-    """
-    A trade from the Kraken API.
-    """
-
-    pair: str
-    price: float
-    volume: float
-    timestamp: datetime
-    timestamp_ms: int
-
-    def to_dict(self) -> dict:
-        return {
-            'pair': self.pair,
-            'price': self.price,
-            'volume': self.volume,
-            'timestamp_ms': self.timestamp_ms}
 
 
 class KrakenMockAPI:

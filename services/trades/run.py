@@ -1,14 +1,15 @@
-from loguru import logger
-from quixstreams import Application
 from typing import Union
+
 from kraken_api.mock import KrakenMockAPI
 from kraken_api.websocket import KrakenWebsocketAPI
+from loguru import logger
+from quixstreams import Application
 
 
 def main(
     kafka_broker_address: str,
     kafka_topic: str,
-    kraken_api: Union[KrakenMockAPI, KrakenWebsocketAPI]
+    kraken_api: Union[KrakenMockAPI, KrakenWebsocketAPI],
 ):
     """
     It does 2 things:
@@ -56,9 +57,9 @@ if __name__ == '__main__':
     from config import config
 
     kraken_api = KrakenWebsocketAPI(pairs=config.pairs)
-    
+
     main(
         kafka_broker_address=config.kafka_broker_address,
         kafka_topic=config.kafka_topic,
-        kraken_api=kraken_api
+        kraken_api=kraken_api,
     )

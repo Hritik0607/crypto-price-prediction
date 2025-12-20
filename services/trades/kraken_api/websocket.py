@@ -1,9 +1,11 @@
-from typing import List
-from websocket import create_connection
 import json
-from loguru import logger
-from .trade import Trade
 from datetime import datetime
+from typing import List
+
+from loguru import logger
+from websocket import create_connection
+
+from .trade import Trade
 
 
 class KrakenWebsocketAPI:
@@ -56,7 +58,6 @@ class KrakenWebsocketAPI:
         # breakpoint()
         return trades
 
-
     def _subscribe(self):
         """
         Subscribes to the websocket and waits for the initial snapshot.
@@ -85,6 +86,4 @@ class KrakenWebsocketAPI:
 
 
 def _datestr2milliseconds(datestr: str) -> int:
-    return int(
-        datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%fZ').timestamp() * 1000
-    )
+    return int(datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%fZ').timestamp() * 1000)

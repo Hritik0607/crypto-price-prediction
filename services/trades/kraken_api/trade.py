@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import List
-from pydantic import BaseModel, field_validator
+
+from pydantic import BaseModel
 
 
 class Trade(BaseModel):
@@ -17,7 +17,6 @@ class Trade(BaseModel):
     @property
     def timestamp_ms(self) -> int:
         return int(self.timestamp.timestamp() * 1000)
-
 
     def to_dict(self) -> dict:
         return self.model_dump_json()
