@@ -43,7 +43,7 @@ def main(
             for trade in trades:
                 # serialize the trade as bytes
                 message = topic.serialize(
-                    key=trade.pair,
+                    key=trade.pair.replace('/', '-'),
                     value=trade.to_dict(),
                 )
 
