@@ -20,6 +20,35 @@ class Trade(BaseModel):
         pair: str,
         price: float,
         volume: float,
+        timestamp_sec: float,
+    ) -> 'Trade':
+        """
+        Returns a Trade object from the Kraken REST API response.
+
+        E.g response:
+            ['76395.00000', '0.01305597', 1731155565.4159515, 's', 'm', '', 75468573]
+
+            price: float
+            volume: float
+            timestamp_sec: float
+        """
+        # convert the timestamp_sec from float to str
+        timestamp_ms = int(float(timestamp_sec) * 1000)
+
+        return cls(
+            pair=pair,
+            price=price,
+            volume=volume,
+            timestamp=cls._milliseconds2datestr(timestamp_ms),
+            timestamp_ms=timestamp_ms,
+        )
+
+    @classmethod
+    def from_kraken_websocket_api_response(
+        cls,
+        pair: str,
+        price: float,
+        volume: float,
         timestamp: str,
     ) -> 'Trade':
         return cls(
@@ -28,6 +57,12 @@ class Trade(BaseModel):
             volume=volume,
             timestamp=timestamp,
             timestamp_ms=cls._datestr2milliseconds(timestamp),
+        )
+
+    @staticmethod
+    def _milliseconds2datestr(milliseconds: int) -> str:
+        return datetime.fromtimestamp(milliseconds / 1000).strftime(
+            '%Y-%m-%dT%H:%M:%S.%fZ'
         )
 
     @staticmethod
@@ -42,10 +77,3 @@ class Trade(BaseModel):
 
     def to_dict(self) -> dict:
         return self.model_dump()
-
-    # def to_dict(self) -> dict:
-    #     return {
-    #         'pair': self.pair,
-    #         'price': self.price,
-    #         'volume': self.volume,
-    #         'timestamp_ms': self.timestamp_ms}

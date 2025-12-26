@@ -1,4 +1,9 @@
-run-dev:
+run-dev-live:
+	cp live.settings.env settings.env
+	uv run python run.py
+
+run-dev-historical:
+	powershell -Command "Copy-Item -Force historical.settings.env settings.env"
 	uv run python run.py
 
 build:
