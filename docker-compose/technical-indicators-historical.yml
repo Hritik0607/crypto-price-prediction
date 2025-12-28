@@ -1,0 +1,71 @@
+version: '3.7'
+name: technical-indicators-historical
+networks:
+  redpanda_network:
+    external: true
+    name: redpanda_network
+services:
+  trades:
+    build:
+      context: ../services/trades
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+      - KAFKA_TOPIC=trades_historical_${RUN_ID}
+      - PAIRS=["BTC/USD", "BTC/EUR", "ETH/EUR", "ETH/USD", "SOL/USD", "SOL/EUR", "XRP/USD", "XRP/EUR"]
+      - LAST_N_DAYS=30
+      - DATA_SOURCE=historical
+    restart: on-failure
+    
+  candles:
+    build:
+      context: ../services/candles
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+      - KAFKA_INPUT_TOPIC=trades_historical_${RUN_ID}
+      - KAFKA_OUTPUT_TOPIC=candles_historical_${RUN_ID}
+      - KAFKA_CONSUMER_GROUP=candles_historical_${RUN_ID}
+      - CANDLE_SECONDS=60
+      - EMIT_INCOMPLETE_CANDLES=False
+      - DATA_SOURCE=historical
+    restart: always
+
+  technical-indicators:
+    build:
+      context: ../services/technical-indicators
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+      - KAFKA_INPUT_TOPIC=candles_historical_${RUN_ID}
+      - KAFKA_OUTPUT_TOPIC=technical_indicators_historical_${RUN_ID}
+      - KAFKA_CONSUMER_GROUP=technical_indicators_historical_${RUN_ID}
+      - MAX_CANDLES_IN_STATE=120
+      - CANDLE_SECONDS=60
+      - DATA_SOURCE=historical
+    restart: always
+
+  to-feature-store:
+    build:
+      context: ../services/to-feature-store
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    env_file:
+      - ../services/to-feature-store/hopsworks_credentials.env
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+      - KAFKA_INPUT_TOPIC=technical_indicators_historical_${RUN_ID}
+      - KAFKA_CONSUMER_GROUP=to_feature_store_historical_${RUN_ID}
+      - FEATURE_GROUP_NAME=technical_indicators
+      - FEATURE_GROUP_VERSION=2
+      - FEATURE_GROUP_PRIMARY_KEYS=["pair", "candle_seconds"]
+      - FEATURE_GROUP_EVENT_TIME=timestamp_ms
+      - DATA_SOURCE=historical
+    restart: always
