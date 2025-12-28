@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Literal, Optional, Tuple
 
 from loguru import logger
 from quixstreams import Application
@@ -57,6 +57,7 @@ def main(
     kafka_consumer_group: str,
     candle_seconds: int,
     emit_incomplete_candles: bool,
+    data_source: Literal['live', 'historical', 'test'],
 ):
     """
     3 steps:
@@ -81,6 +82,7 @@ def main(
     app = Application(
         broker_address=kafka_broker_address,
         consumer_group=kafka_consumer_group,
+        auto_offset_reset='latest' if data_source == 'live' else 'earliest',
     )
 
     # Define the input and output topics
@@ -161,4 +163,5 @@ if __name__ == '__main__':
         kafka_consumer_group=config.kafka_consumer_group,
         candle_seconds=config.candle_seconds,
         emit_incomplete_candles=config.emit_incomplete_candles,
+        data_source=config.data_source,
     )
