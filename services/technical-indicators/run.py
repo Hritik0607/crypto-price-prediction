@@ -1,3 +1,5 @@
+from typing import Literal
+
 from candle import update_candles
 from loguru import logger
 from quixstreams import Application
@@ -11,6 +13,7 @@ def main(
     kafka_consumer_group: str,
     max_candles_in_state: int,
     candle_seconds: int,
+    data_source: Literal['live', 'historical', 'test'],
 ):
     """
     3 steps:
@@ -25,6 +28,7 @@ def main(
         kafka_consumer_group: The consumer group for the kafka consumer
         max_candles_in_state: The maximum number of candles to keep in the state
         candle_seconds: The number of seconds per candle
+        data_source: The data source (live, historical, test)
     Returns:
         None
     """
@@ -32,6 +36,7 @@ def main(
     app = Application(
         broker_address=kafka_broker_address,
         consumer_group=kafka_consumer_group,
+        auto_offset_reset='latest' if data_source == 'live' else 'earliest',
     )
 
     # Define the input and output topics of our streaming application
@@ -73,4 +78,5 @@ if __name__ == '__main__':
         kafka_consumer_group=config.kafka_consumer_group,
         max_candles_in_state=config.max_candles_in_state,
         candle_seconds=config.candle_seconds,
+        data_source=config.data_source,
     )
