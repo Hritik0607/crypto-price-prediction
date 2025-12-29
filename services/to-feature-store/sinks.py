@@ -20,6 +20,7 @@ class HopsworksFeatureStoreSink(BatchingSink):
         feature_group_primary_keys: list[str],
         feature_group_event_time: str,
         feature_group_materialization_interval_minutes: int,
+        enable_online: bool,
     ):
         """
         Establish a connection to the Hopsworks Feature Store
@@ -29,6 +30,7 @@ class HopsworksFeatureStoreSink(BatchingSink):
         self.materialization_interval_minutes = (
             feature_group_materialization_interval_minutes
         )
+        self.enable_online = enable_online
 
         # Establish a connection to the Hopsworks Feature Store
         project = hopsworks.login(project=project_name, api_key_value=api_key)
@@ -40,18 +42,20 @@ class HopsworksFeatureStoreSink(BatchingSink):
             version=feature_group_version,
             primary_key=feature_group_primary_keys,
             event_time=feature_group_event_time,
-            online_enabled=True,
+            # online_enabled=True,
+            online_enabled=enable_online,
         )
 
-        # set the materialization interval
-        try:
-            self._feature_group.materialization_job.schedule(
-                cron_expression=f'0 0/{self.materialization_interval_minutes} * ? * * *',
-                start_time=datetime.now(tz=timezone.utc),
-            )
-        # TODO: handle the FeatureStoreException
-        except Exception as e:
-            logger.error(f'Failed to schedule materialization job: {e}')
+        if enable_online:
+            # set the materialization interval
+            try:
+                self._feature_group.materialization_job.schedule(
+                    cron_expression=f'0 0/{self.materialization_interval_minutes} * ? * * *',
+                    start_time=datetime.now(tz=timezone.utc),
+                )
+            # TODO: handle the FeatureStoreException
+            except Exception as e:
+                logger.error(f'Failed to schedule materialization job: {e}')
 
         # call constructor of the base class to make sure the batches are initialized
         super().__init__()

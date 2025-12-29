@@ -63,6 +63,7 @@ if __name__ == '__main__':
         feature_group_primary_keys=config.feature_group_primary_keys,
         feature_group_event_time=config.feature_group_event_time,
         feature_group_materialization_interval_minutes=config.feature_group_materialization_interval_minutes,
+        enable_online=(config.data_source == 'live'),
     )
 
     main(
