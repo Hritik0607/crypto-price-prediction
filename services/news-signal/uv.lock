@@ -1668,6 +1668,7 @@ name = "news-signal"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "accelerate" },
     { name = "comet-ml" },
     { name = "datasets" },
     { name = "fire" },
@@ -1676,25 +1677,32 @@ dependencies = [
     { name = "llama-index-llms-ollama" },
     { name = "loguru" },
     { name = "pandas" },
+    { name = "peft" },
     { name = "pydantic-settings" },
     { name = "quixstreams" },
     { name = "setuptools" },
+    { name = "transformers" },
+    { name = "trl" },
     { name = "unsloth" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "accelerate", specifier = ">=0.34.1" },
     { name = "comet-ml", specifier = ">=3.55.0" },
-    { name = "datasets", specifier = ">=4.3.0" },
+    { name = "datasets", specifier = "==4.3.0" },
     { name = "fire", specifier = ">=0.7.1" },
     { name = "llama-index-core", specifier = ">=0.14.10" },
     { name = "llama-index-llms-anthropic", specifier = ">=0.10.4" },
     { name = "llama-index-llms-ollama", specifier = ">=0.9.1" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pandas", specifier = ">=2.3.3" },
+    { name = "peft", specifier = ">=0.18.0" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "quixstreams", specifier = ">=3.23.1" },
     { name = "setuptools", specifier = ">=80.9.0" },
+    { name = "transformers", specifier = "==4.56.2" },
+    { name = "trl", specifier = "==0.22.2" },
     { name = "unsloth", specifier = ">=2026.1.2" },
 ]
 
@@ -3214,7 +3222,7 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.57.3"
+version = "4.56.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
@@ -3228,9 +3236,9 @@ dependencies = [
     { name = "tokenizers" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/70/d42a739e8dfde3d92bb2fff5819cbf331fe9657323221e79415cd5eb65ee/transformers-4.57.3.tar.gz", hash = "sha256:df4945029aaddd7c09eec5cad851f30662f8bd1746721b34cc031d70c65afebc", size = 10139680, upload-time = "2025-11-25T15:51:30.139Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e5/82/0bcfddd134cdf53440becb5e738257cc3cf34cf229d63b57bfd288e6579f/transformers-4.56.2.tar.gz", hash = "sha256:5e7c623e2d7494105c726dd10f6f90c2c99a55ebe86eef7233765abd0cb1c529", size = 9844296, upload-time = "2025-09-19T15:16:26.778Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/6b/2f416568b3c4c91c96e5a365d164f8a4a4a88030aa8ab4644181fdadce97/transformers-4.57.3-py3-none-any.whl", hash = "sha256:c77d353a4851b1880191603d36acb313411d3577f6e2897814f333841f7003f4", size = 11993463, upload-time = "2025-11-25T15:51:26.493Z" },
+    { url = "https://files.pythonhosted.org/packages/70/26/2591b48412bde75e33bfd292034103ffe41743cacd03120e3242516cd143/transformers-4.56.2-py3-none-any.whl", hash = "sha256:79c03d0e85b26cb573c109ff9eafa96f3c8d4febfd8a0774e8bba32702dd6dde", size = 11608055, upload-time = "2025-09-19T15:16:23.736Z" },
 ]
 
 [[package]]
@@ -3262,16 +3270,16 @@ wheels = [
 
 [[package]]
 name = "trl"
-version = "0.24.0"
+version = "0.22.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "accelerate" },
     { name = "datasets" },
     { name = "transformers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e8/2e/30ece0055eee5763126e2d52f6e04aec294bcae34b46d9ca16c53c4b5852/trl-0.24.0.tar.gz", hash = "sha256:eee495223725d3da0596be2607581969db89ba0f7c00b075802addc31e61eac9", size = 368447, upload-time = "2025-10-16T00:10:37.65Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/70/cf4f7936669457103d10aaa235fcf17d58f902f389acef93cb392118e019/trl-0.22.2.tar.gz", hash = "sha256:343203711339cb4f200b78fee35efa39655b2e6a0f8a63ce0b077973e689c12a", size = 497063, upload-time = "2025-09-03T14:41:58.055Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/5f/c647fedde9d59ae35ee189cc49e419da5ac1d9ad9933cb69401a7eac4705/trl-0.24.0-py3-none-any.whl", hash = "sha256:a9145b7d4a4a33778de117bda48530f0cf5b2ac25acc07db80ad04836f490dfc", size = 423143, upload-time = "2025-10-16T00:10:35.809Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/89/b10851fcad71e9ff7a6e74c5981476a7a3aa4efc0e9ef24176eb859990c9/trl-0.22.2-py3-none-any.whl", hash = "sha256:b5b058bc2b876f3b9d04e3ac54c6ad085b09f5583becefefd10d88a7cd150e21", size = 544789, upload-time = "2025-09-03T14:41:56.419Z" },
 ]
 
 [[package]]

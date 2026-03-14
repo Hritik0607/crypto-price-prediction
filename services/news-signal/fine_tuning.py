@@ -1,12 +1,13 @@
 import os
+os.environ['UNSLOTH_RETURN_LOGITS'] = '1'
+from unsloth import FastLanguageModel, is_bfloat16_supported
 from typing import Literal, Optional, Tuple
 
 import comet_ml
 from datasets import Dataset, load_dataset
 from loguru import logger
 from transformers import AutoTokenizer, TrainingArguments
-from trl import SFTTrainer
-from unsloth import FastLanguageModel, is_bfloat16_supported
+from trl import SFTTrainer, SFTConfig
 
 # chat template we use to format the data we feed to the model
 alpaca_prompt = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
@@ -155,20 +156,17 @@ def fine_tune(
     Fine-tunes the model using supervised fine tuning.
     """
     # trainer with hyper-parameters
+
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         train_dataset=train_dataset,
         eval_dataset=test_dataset,
-        dataset_text_field='text',
-        max_seq_length=max_seq_length,
-        dataset_num_proc=2,
-        packing=False,  # Can make training 5x faster for short sequences.
-        args=TrainingArguments(
+        args=SFTConfig(
             per_device_train_batch_size=2,
             gradient_accumulation_steps=4,
             warmup_steps=5,
-            num_train_epochs=10,  # Set this for 1 full training run.
+            # num_train_epochs=10,  # Set this for 1 full training run.
             max_steps=120,
             learning_rate=2e-4,
             fp16=not is_bfloat16_supported(),
@@ -178,9 +176,14 @@ def fine_tune(
             weight_decay=0.01,
             lr_scheduler_type='linear',
             seed=3407,
+            dataset_text_field='text',
+            dataset_num_proc=2,
+            max_length=max_seq_length,
+            packing=False,  # Can make training 5x faster for short sequences.
             output_dir='outputs',
             report_to='comet_ml',  # Use this for WandB etc
             eval_strategy='epoch',
+            eos_token=None
         ),
     )
 
@@ -244,7 +247,7 @@ def export_model_to_ollama_format(
 
     breakpoint()
 
-    # TODO: if you want to push to HF you need to get your HF username and generate
+    # TODO: To push to HF
     # a token at https://huggingface.co/settings/tokens
     # model.push_to_hub_gguf(
     #     "hf/model", # Change hf to your username!
@@ -282,7 +285,7 @@ def run(
     # 0. Login to CometML so we log training run metrics that we can see on CometML dashboard
     os.environ['COMET_LOG_ASSETS'] = 'True'
     comet_ml.login(
-        # api_key=comet_ml_api_key, # I previously ran $uv run comet login on the terminal to paste my API key
+        # api_key=comet_ml_api_key, # ran $uv run comet login on the terminal to paste API key
         project_name=comet_ml_project_name
     )
     logger.info(f'Logged in to CometML with project name: {comet_ml_project_name}')
@@ -294,6 +297,8 @@ def run(
 
     # 2. Add LoRA adapters to the base model
     model = add_lora_adapters(model)
+
+    model.print_trainable_parameters()
 
     # 3. Load the dataset with (instruction, input, output) tuples into a HuggingFace Dataset object
     # with alpaca prompt format
@@ -308,7 +313,6 @@ def run(
         train_dataset,
         test_dataset,
         max_seq_length=max_seq_length,
-        max_steps=max_steps,
     )
 
     # 5. Inference on a few examples - sanity check
