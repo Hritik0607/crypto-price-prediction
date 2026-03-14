@@ -1,0 +1,20 @@
+[project]
+name = "news-signal"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "comet-ml>=3.55.0",
+    "datasets>=4.3.0",
+    "fire>=0.7.1",
+    "llama-index-core>=0.14.10",
+    "llama-index-llms-anthropic>=0.10.4",
+    "llama-index-llms-ollama>=0.9.1",
+    "loguru>=0.7.3",
+    "pandas>=2.3.3",
+    "pydantic-settings>=2.10.1",
+    "quixstreams>=3.23.1",
+    "setuptools>=80.9.0",
+    "unsloth>=2026.1.2",
+]

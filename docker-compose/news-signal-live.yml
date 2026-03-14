@@ -1,0 +1,47 @@
+version: '3.7'
+name: news-signal-live
+networks:
+  redpanda_network:
+    external: true
+    name: redpanda_network
+services:
+  news:
+    build:
+      context: ../services/news
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    env_file:
+      - ../services/news/settings.env
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+    restart: always
+
+  news-signal:
+    build:
+      context: ../services/news-signal
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    env_file:
+      - ../services/news-signal/live.settings.env
+      # Uncomment this if you want to use Anthropic, and below set the MODEL_PROVIDER to anthropic
+      # - ../services/news-signal/anthropic_credentials.env
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+      - MODEL_PROVIDER=ollama
+      # - OLLAMA_BASE_URL=http://192.168.1.3:11434/ # TODO: change to docker.host.internal:11434
+    restart: always
+
+  to-feature-store:
+    build:
+      context: ../services/to-feature-store
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    env_file:
+      - ../services/to-feature-store/live.settings.news-signal.env
+      - ../services/to-feature-store/hopsworks_credentials.env
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+    restart: always

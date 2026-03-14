@@ -38,6 +38,30 @@ backfill-technical-indicators: build-technical-indicators-historical
 
 
 ########################################
+## News signal pipeline 
+########################################
+
+# for live data
+build-news-signal-live:
+	docker compose -f news-signal-live.yml build
+
+start-news-signal-live: build-news-signal-live
+	docker compose -f news-signal-live.yml up -d
+
+stop-news-signal-live:
+	docker compose -f news-signal-live.yml down
+
+# for historical data
+build-news-signal-historical:
+	docker compose -f news-signal-historical.yml build
+
+backfill-news-signals: build-news-signal-historical
+	$(eval RUN_ID := $(shell uuidgen))
+	@echo "Starting backfill of news signals with RUN_ID: $(RUN_ID)"
+	RUN_ID=$(RUN_ID) docker compose -f news-signal-historical.yml up -d
+
+	
+########################################
 ## Clean up
 ########################################
 
