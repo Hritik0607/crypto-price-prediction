@@ -1668,18 +1668,22 @@ name = "news-signal"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "accelerate" },
-    { name = "comet-ml" },
-    { name = "datasets" },
     { name = "fire" },
     { name = "llama-index-core" },
     { name = "llama-index-llms-anthropic" },
     { name = "llama-index-llms-ollama" },
     { name = "loguru" },
     { name = "pandas" },
-    { name = "peft" },
     { name = "pydantic-settings" },
     { name = "quixstreams" },
+]
+
+[package.dev-dependencies]
+gpu-instance = [
+    { name = "accelerate" },
+    { name = "comet-ml" },
+    { name = "datasets" },
+    { name = "peft" },
     { name = "setuptools" },
     { name = "transformers" },
     { name = "trl" },
@@ -1688,18 +1692,22 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "accelerate", specifier = ">=0.34.1" },
-    { name = "comet-ml", specifier = ">=3.55.0" },
-    { name = "datasets", specifier = "==4.3.0" },
     { name = "fire", specifier = ">=0.7.1" },
     { name = "llama-index-core", specifier = ">=0.14.10" },
     { name = "llama-index-llms-anthropic", specifier = ">=0.10.4" },
     { name = "llama-index-llms-ollama", specifier = ">=0.9.1" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "pandas", specifier = ">=2.3.3" },
-    { name = "peft", specifier = ">=0.18.0" },
     { name = "pydantic-settings", specifier = ">=2.10.1" },
     { name = "quixstreams", specifier = ">=3.23.1" },
+]
+
+[package.metadata.requires-dev]
+gpu-instance = [
+    { name = "accelerate", specifier = ">=0.34.1" },
+    { name = "comet-ml", specifier = ">=3.55.0" },
+    { name = "datasets", specifier = "==4.3.0" },
+    { name = "peft", specifier = ">=0.18.0" },
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "transformers", specifier = "==4.56.2" },
     { name = "trl", specifier = "==0.22.2" },

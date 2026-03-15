@@ -52,6 +52,15 @@ instruction-dataset-with-ollama:
 		--input_file ./data/cryptopanic_news.csv \
 		--output_file ./data/instruction_dataset_ollama_10k.jsonl
 
+# To install the dependencies for the GPU instance
+venv-gpu-instance:
+	export UV_LINK_MODE=copy && \
+	export TMPDIR=/workspace/.tmp-uv && \
+	export UV_INSTALLER_MAX_JOBS=1 && \
+	mkdir -p /workspace/.tmp-uv && \
+	curl -LsSf https://astral.sh/uv/install.sh | sh && \
+	. $$HOME/.local/bin/env && \
+	uv sync --no-cache --group gpu-instance
 
 # To login to Comet ML during fine-tuning
 login-comet:
@@ -63,4 +72,4 @@ fine-tune:
 		--base_llm_name unsloth/Llama-3.2-1B-bnb-4bit \
 		--dataset_path ./data/instruction_dataset_ollama.jsonl \
 		--comet_ml_project_name news-signal-extractor \
-		--max_steps 100
+		--max_steps 5
