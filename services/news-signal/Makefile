@@ -4,6 +4,17 @@ run-claude:
 run-ollama:
 	uv run python -m llms.ollama
 
+########################################
+## Run the service without Docker (for development)
+########################################
+
+run-dev-live:
+	copy live.settings.env settings.env
+	uv run python -m run
+
+run-dev-historical:
+	copy historical.settings.env settings.env
+	uv run python -m run
 
 ########################################
 ## Build the service for Docker

@@ -3,7 +3,7 @@ run-dev-live:
 	uv run python run.py
 
 run-dev-historical:
-	cp historical.settings.env settings.env
+	copy historical.settings.env settings.env
 	uv run python run.py
 
 build:
