@@ -23,6 +23,7 @@ class HopsworksCredentials(BaseSettings):
     model_config = SettingsConfigDict(env_file='hopsworks_credentials.env')
     hopsworks_api_key: str
     hopsworks_project_name: str
+    hopsworks_host: str
 
 
 config = Settings()

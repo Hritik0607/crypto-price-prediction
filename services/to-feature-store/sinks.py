@@ -13,6 +13,7 @@ class HopsworksFeatureStoreSink(BatchingSink):
 
     def __init__(
         self,
+        host_dns: str,
         api_key: str,
         project_name: str,
         feature_group_name: str,
@@ -33,7 +34,9 @@ class HopsworksFeatureStoreSink(BatchingSink):
         self.enable_online = enable_online
 
         # Establish a connection to the Hopsworks Feature Store
-        project = hopsworks.login(project=project_name, api_key_value=api_key)
+        project = hopsworks.login(
+            host=host_dns, project=project_name, api_key_value=api_key
+        )
         self._fs = project.get_feature_store()
 
         # Get the feature group

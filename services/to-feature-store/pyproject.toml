@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "hopsworks==4.2",
+    "hopsworks==4.7.*",
     "loguru>=0.7.3",
     "pyarrow>=22.0.0",
     "pydantic-settings>=2.10.1",

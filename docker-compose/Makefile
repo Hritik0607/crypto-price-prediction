@@ -56,9 +56,9 @@ build-news-signal-historical:
 	docker compose -f news-signal-historical.yml build
 
 backfill-news-signals: build-news-signal-historical
-	$(eval RUN_ID := $(shell uuidgen))
+	$(eval RUN_ID := $(shell powershell -NoProfile -Command "[guid]::NewGuid().ToString()"))
 	@echo "Starting backfill of news signals with RUN_ID: $(RUN_ID)"
-	RUN_ID=$(RUN_ID) docker compose -f news-signal-historical.yml up -d
+	powershell -NoProfile -Command "$$env:RUN_ID='$(RUN_ID)'; docker compose -f news-signal-historical.yml up -d
 
 	
 ########################################

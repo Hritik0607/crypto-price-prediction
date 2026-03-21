@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 
 from llms.claude import ClaudeNewsSignalExtractor
 from loguru import logger
@@ -10,7 +10,14 @@ def add_signal_to_news(value: dict) -> dict:
     From the given news in value['title'] extract the news signal using the LLM.
     """
     logger.debug(f'Extracting news signal from {value["title"]}')
-    news_signal: List[dict] = llm.get_signal(value['title'], output_format='list')
+    try:
+        news_signal: List[dict] = llm.get_signal(value['title'], output_format='list')
+    except Exception as e:
+        logger.warning(
+            f"Failed to extract signal for '{value['title']}': {e}. Skipping."
+        )
+        return []
+
     model_name = llm.model_name
     timestamp_ms = value['timestamp_ms']
 
@@ -38,12 +45,14 @@ def main(
     kafka_output_topic: str,
     kafka_consumer_group: str,
     llm: ClaudeNewsSignalExtractor,
+    data_source: Literal['live', 'historical', 'test'],
 ):
     logger.info('Hello from news-signal!')
 
     app = Application(
         broker_address=kafka_broker_address,
         consumer_group=kafka_consumer_group,
+        auto_offset_reset='latest' if data_source == 'live' else 'earliest',
     )
 
     input_topic = app.topic(
@@ -80,5 +89,5 @@ if __name__ == '__main__':
         kafka_output_topic=config.kafka_output_topic,
         kafka_consumer_group=config.kafka_consumer_group,
         llm=llm,
-        # data_source=config.data_source,
+        data_source=config.data_source,
     )

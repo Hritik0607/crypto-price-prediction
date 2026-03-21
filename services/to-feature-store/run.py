@@ -57,6 +57,7 @@ if __name__ == '__main__':
         # Hopsworks credentials
         api_key=hopsworks_credentials.hopsworks_api_key,
         project_name=hopsworks_credentials.hopsworks_project_name,
+        host_dns=hopsworks_credentials.hopsworks_host,
         # Feature group configuration
         feature_group_name=config.feature_group_name,
         feature_group_version=config.feature_group_version,

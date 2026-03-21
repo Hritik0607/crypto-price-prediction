@@ -12,14 +12,16 @@ class OllamaNewsSignalExtractor(BaseNewsSignalExtractor):
         model_name: str,
         base_url: str,
         temperature: Optional[float] = 0,
+        request_timeout: Optional[int] = 300,
     ):
         self.llm = Ollama(
             model=model_name,
             temperature=temperature,
             base_url=base_url,
+            request_timeout=request_timeout,
             additional_kwargs={
-                'num_ctx': 1024,  # 🔑 FIX: limits context memory
-                'num_predict': 256,  # 🔑 FIX: limits output tokens
+                'num_ctx': 4096,  # 🔑 FIX: limits context memory
+                'num_predict': 512,  # 🔑 FIX: limits output tokens
             },
         )
 
@@ -38,7 +40,7 @@ class OllamaNewsSignalExtractor(BaseNewsSignalExtractor):
             [
                 {"coin": "BTC", "signal": 1},
                 {"coin": "ETH", "signal": 1},
-                {"coin": "XRP", "signal": -1},
+                {"coin": "XRP", "signal": -1}
             ]
 
             News story to analyze:

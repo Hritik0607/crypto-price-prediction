@@ -21,15 +21,6 @@ class NewsSignalOneCoin(BaseModel):
         'XEM',
         'ZEC',
         'ETC',
-        'XLM',
-        'LTC',
-        'BCH',
-        'DOT',
-        'XMR',
-        'EOS',
-        'XEM',
-        'ZEC',
-        'ETC',
     ] = Field(description='The coin that the news is about')
     signal: Literal[1, 0, -1] = Field(
         description="""
