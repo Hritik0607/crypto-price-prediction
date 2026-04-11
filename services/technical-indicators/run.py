@@ -60,6 +60,9 @@ def main(
     # Compute the technical indicators from the candles in the state
     sdf = sdf.apply(compute_indicators, stateful=True)
 
+    # Add a `coin` field to the final message
+    sdf = sdf.apply(lambda value: {**value, 'coin': value['pair'].split('/')[0]})
+
     sdf = sdf.update(lambda value: logger.debug(f'Final message: {value}'))
 
     # Send the final messages to the output topic
