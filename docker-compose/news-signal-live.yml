@@ -12,7 +12,7 @@ services:
     networks:
       - redpanda_network
     env_file:
-      - ../services/news/settings.env
+      - ../services/news/live.settings.env
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
     restart: always
@@ -30,7 +30,8 @@ services:
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
       - MODEL_PROVIDER=ollama
-      # - OLLAMA_BASE_URL=http://192.168.1.3:11434/ # TODO: change to docker.host.internal:11434
+      # - OLLAMA_BASE_URL=http://host.docker.internal:11434/
+      - OLLAMA_BASE_URL=http://10.101.190.23:11434/ # TODO: change to docker.host.internal:11434
     restart: always
 
   to-feature-store:
