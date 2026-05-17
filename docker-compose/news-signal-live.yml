@@ -15,6 +15,7 @@ services:
       - ../services/news/live.settings.env
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
+      - HISTORICAL_DATA_SOURCE_CSV_FILE=/app/data/cryptopanic_news.csv
     restart: always
 
   news-signal:
@@ -31,7 +32,7 @@ services:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
       - MODEL_PROVIDER=ollama
       # - OLLAMA_BASE_URL=http://host.docker.internal:11434/
-      - OLLAMA_BASE_URL=http://10.101.190.23:11434/ # TODO: change to docker.host.internal:11434
+      - OLLAMA_BASE_URL=http://10.101.191.82:11434/ # TODO: change to host.docker.internal:11434
     restart: always
 
   to-feature-store:
