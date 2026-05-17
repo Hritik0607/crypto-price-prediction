@@ -1,0 +1,21 @@
+[project]
+name = "price-predictor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "comet-ml>=3.57.3",
+    "elasticsearch>=9.4.0",
+    "hopsworks==4.7.*",
+    "joblib>=1.5.3",
+    "loguru>=0.7.3",
+    "numpy==1.26.4",
+    "optuna>=4.8.0",
+    "pandas>=1.5.3",
+    "pyarrow>=23.0.1",
+    "pydantic-settings>=2.10.1",
+    "quixstreams>=3.23.1",
+    "scikit-learn>=1.8.0",
+    "xgboost>=3.2.0",
+]
