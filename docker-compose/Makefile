@@ -13,6 +13,17 @@ add-one-partition-to-trades-topic:
 
 
 ########################################
+## Elasticsearch
+########################################
+
+start-elasticsearch:
+	docker compose -f elasticsearch.yml up -d
+
+stop-elasticsearch:
+	docker compose -f elasticsearch.yml down
+
+	
+########################################
 ## Technical indicators pipeline 
 ########################################
 
