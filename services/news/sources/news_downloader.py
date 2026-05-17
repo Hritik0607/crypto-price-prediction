@@ -1,5 +1,7 @@
+from datetime import datetime, timezone
 from typing import List, Tuple
 
+import pandas as pd
 import requests
 from loguru import logger
 
@@ -84,6 +86,36 @@ class NewsDownloader:
         next_url = response['next']
 
         return news, next_url
+
+
+class NewsDataloaderDummy:
+    def __init__(self, path_to_csv_file: str):
+        self.df = pd.read_csv(path_to_csv_file, parse_dates=['newsDatetime'])
+        self.df = self.df.dropna(subset=['title', 'sourceId', 'newsDatetime'])
+        self.rows = self.df[['title', 'sourceId', 'newsDatetime']].to_dict(
+            orient='records'
+        )
+        self.index = 0
+
+    def get_news(self) -> List[News]:
+        if self.index >= len(self.rows):
+            self.index = 0  # loop again (optional)
+
+        row = self.rows[self.index]
+        self.index += 1
+
+        news = News.from_csv_row(
+            title=row['title'],
+            source_id=row['sourceId'],
+            news_datetime=row['newsDatetime'],
+        )
+
+        # 🔥 Override timestamp → simulate LIVE
+        news.published_at = (
+            datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        )
+
+        return [news]
 
 
 if __name__ == '__main__':

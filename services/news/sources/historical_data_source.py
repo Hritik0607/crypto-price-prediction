@@ -60,7 +60,7 @@ class HistoricalNewsDataSource(Source):
         logger.debug(f'Loaded {len(df)} rows from {self.path_to_csv_file}')
 
         # drop nan values
-        df = df.dropna()
+        df = df.dropna(subset=['title', 'sourceId', 'newsDatetime'])
         logger.debug(f'{len(df)} rows after dropping nan values')
 
         # filter the dataframe to only include the last n days

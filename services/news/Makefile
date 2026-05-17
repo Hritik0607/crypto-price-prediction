@@ -1,5 +1,5 @@
 run-dev-live:
-	cp live.settings.env settings.env
+	copy live.settings.env settings.env
 	uv run python run.py
 
 run-dev-historical:

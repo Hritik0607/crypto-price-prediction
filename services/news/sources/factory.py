@@ -7,7 +7,7 @@ NewsDataSource = Union[LiveNewsDataSource, HistoricalNewsDataSource]
 
 
 def get_source(
-    data_source: Literal['live', 'historical'],
+    data_source: Literal['live', 'historical', 'dummy_live'],
     polling_interval_sec: Optional[int] = 10,
     url_rar_file: Optional[str] = None,
     path_to_csv_file: Optional[str] = None,
@@ -23,6 +23,18 @@ def get_source(
         news_downloader = NewsDownloader(cryptopanic_api_key=cryptopanic_config.api_key)
 
         # Quix Streams data source that wraps the news downloader
+        news_source = LiveNewsDataSource(
+            news_downloader=news_downloader,
+            polling_interval_sec=polling_interval_sec,
+        )
+
+        return news_source
+
+    elif data_source == 'dummy_live':
+        from .news_downloader import NewsDataloaderDummy
+
+        news_downloader = NewsDataloaderDummy(path_to_csv_file=path_to_csv_file)
+
         news_source = LiveNewsDataSource(
             news_downloader=news_downloader,
             polling_interval_sec=polling_interval_sec,

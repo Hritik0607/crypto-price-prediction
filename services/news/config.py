@@ -11,7 +11,7 @@ class Config(BaseSettings):
     model_config = SettingsConfigDict(env_file='settings.env')
     kafka_broker_address: str
     kafka_topic: str
-    data_source: Literal['live', 'historical']
+    data_source: Literal['live', 'historical', 'dummy_live']
 
     polling_interval_sec: Optional[int] = 10
     historical_data_source_url_rar_file: Optional[str] = None

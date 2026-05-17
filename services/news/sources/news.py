@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pandas import Timestamp
 from pydantic import BaseModel
@@ -11,7 +12,7 @@ class News(BaseModel):
 
     title: str
     published_at: str  # "2024-12-18T12:29:27Z"
-    source: str
+    source: Optional[str] = None
 
     # Challenge: You can also keep the URL and scrape it to get even more context
     # about this piece of news.
