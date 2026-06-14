@@ -14,7 +14,7 @@ def run(
     # encapsulate the inference logic in its .predict() method
     price_predictor: PricePredictor,
     # where to save the predictions
-    # elastic_search_sink: ElasticSearchSink,
+    elastic_search_sink: ElasticSearchSink,
 ):
     """
     Run the inference job as a Quix Streams application.
@@ -50,13 +50,13 @@ def run(
     sdf = sdf[sdf['candle_seconds'] == candle_seconds]
 
     # Generate a new prediction
-    sdf = sdf.apply(lambda _: price_predictor.predict().to_dict())
+    sdf = sdf.apply(lambda candle: price_predictor.predict(candle).to_dict())
 
     # logging the predictions
     sdf = sdf.update(lambda x: logger.info(x))
 
     # Save the predictions to Elastic Search sink
-    # sdf.sink(elastic_search_sink)
+    sdf.sink(elastic_search_sink)
 
     app.run(sdf)
 

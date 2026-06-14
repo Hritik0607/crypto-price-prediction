@@ -1,7 +1,7 @@
 import json
 import time
 from datetime import datetime, timezone
-from typing import Literal, Tuple
+from typing import Literal, Optional, Tuple
 
 import joblib
 import pandas as pd
@@ -103,7 +103,9 @@ class PricePredictor:
         return FeatureReader(
             hopsworks_project_name=hopsworks_config.project_name,
             hopsworks_api_key=hopsworks_config.api_key,
+            hopsworks_host=hopsworks_config.hopsworks_host,
             feature_view_name=self.inference_params['feature_view_name'],
+            # feature_view_version=2,
             feature_view_version=self.inference_params['feature_view_version'],
             pair_to_predict=self.inference_params['pair_to_predict'],
             candle_seconds=self.inference_params['candle_seconds'],
@@ -117,7 +119,7 @@ class PricePredictor:
             ],
         )
 
-    def predict(self) -> PredictionOutput:
+    def predict(self, candle: Optional[dict] = None) -> PredictionOutput:
         """
         Generates a new prediction using the latest features from the feature store.
 
@@ -127,10 +129,20 @@ class PricePredictor:
         - Return the prediction
         """
         # get the latest features from the feature store
-        features: pd.DataFrame = self.feature_reader.get_inference_features()
+        features: pd.DataFrame = self.feature_reader.get_inference_features(
+            fresh_candle=candle
+        )
 
         # make the prediction
-        prediction: float = self.model.predict(features)[0]
+        # prediction: float = self.model.predict(features)[0]
+        # delta: float = self.model.predict(features)[0]
+        # Get exact feature names the model was trained on
+        trained_feature_names = self.model.feature_name_
+        # Keep only columns that exist in both
+        features_aligned = features[trained_feature_names]
+        delta: float = self.model.predict(features_aligned)[0]
+        current_price: float = features['close'].iloc[0]
+        prediction: float = current_price + delta
 
         # build the output
         timestamp_ms = int(time.time() * 1000)
