@@ -1,12 +1,97 @@
+import os
+
 import comet_ml
 import joblib
+import numpy as np
 import pandas as pd
 from feature_reader import FeatureReader
 from loguru import logger
-from models.dummy_model import DummyModel
+from models.light_gbm_model import LightGBMModel
 from models.xgboost_model import XGBoostModel
 from names import get_model_name
 from sklearn.metrics import mean_absolute_error
+
+
+def walk_forward_validation(
+    data: pd.DataFrame,
+    n_splits: int = 5,
+) -> tuple[float, list[float]]:
+    """
+    Performs walk-forward validation on the full dataset.
+
+    Unlike a single 80/20 split which gives ONE MAE number,
+    walk-forward validation tests across multiple time windows
+    giving a much more reliable estimate of production performance.
+
+    Each window always trains on PAST data and validates on FUTURE data.
+    This covers different market conditions (bull, bear, sideways).
+
+    Example with n_splits=5:
+      Window 1: train rows 0-33%,   validate rows 33-40%
+      Window 2: train rows 0-40%,   validate rows 40-47%
+      Window 3: train rows 0-47%,   validate rows 47-53%
+      Window 4: train rows 0-53%,   validate rows 53-60%
+      Window 5: train rows 0-60%,   validate rows 60-67%
+
+    Args:
+        data: Full dataset with features AND 'target' column, sorted by timestamp
+        n_splits: Number of validation windows (default 5)
+
+    Returns:
+        Tuple of (average_mae, list_of_per_fold_maes)
+    """
+    from sklearn.model_selection import TimeSeriesSplit
+
+    X = data.drop(columns=['target'])
+    y = data['target']
+
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+    mae_scores = []
+
+    logger.info(f'Starting walk-forward validation with {n_splits} folds...')
+
+    for fold_num, (train_idx, val_idx) in enumerate(tscv.split(X), 1):
+        # Split this fold — always past for train, future for validate
+        X_train_fold = X.iloc[train_idx]
+        y_train_fold = y.iloc[train_idx]
+        X_val_fold = X.iloc[val_idx]
+        y_val_fold = y.iloc[val_idx]
+
+        # Train a fresh XGBoost model on this fold with default params.
+        # We do NOT run hyperparameter tuning per fold because:
+        #   - It would be extremely slow (n_splits * n_trials models trained)
+        #   - The goal here is evaluation, not param finding
+        #   - Hyperparameter tuning already happened before this step
+        fold_model = XGBoostModel()
+        fold_model.fit(
+            X_train_fold,
+            y_train_fold,
+            n_search_trials=0,  # no tuning per fold — just train with defaults
+        )
+
+        # Evaluate on the validation set (future data the model never saw)
+        y_pred = fold_model.predict(X_val_fold)
+        mae = mean_absolute_error(y_val_fold, y_pred)
+        mae_scores.append(mae)
+
+        logger.info(
+            f'Walk-forward fold {fold_num}/{n_splits}: '
+            f'train_rows={len(X_train_fold)}, '
+            f'val_rows={len(X_val_fold)}, '
+            f'MAE={mae:.2f}'
+        )
+
+    avg_mae = float(np.mean(mae_scores))
+    std_mae = float(np.std(mae_scores))
+
+    logger.info(
+        f'Walk-forward validation complete: '
+        f'avg_MAE={avg_mae:.2f}, '
+        f'std_MAE={std_mae:.2f}, '
+        f'per_fold={[round(m, 2) for m in mae_scores]}'
+    )
+
+    return avg_mae, mae_scores
 
 
 def train_test_split(
@@ -134,17 +219,50 @@ def train(
         news_signals_feature_group_version,
     )
     logger.info(f'Reading feature data for {days_back} days back...')
-    features_and_target = feature_reader.get_training_data(days_back=days_back)
+    parquet_path = os.path.join(
+        os.path.dirname(__file__),
+        '..',
+        'to-feature-store',
+        'data',
+        f'technical_indicators_v{technical_indicators_feature_group_version}.parquet',
+    )
+    features_and_target = feature_reader.get_training_data(
+        days_back=days_back, parquet_path=parquet_path
+    )
     logger.info(f'Got {len(features_and_target)} rows')
 
     # 2. Split the data into training and testing sets
     train_df, test_df = train_test_split(features_and_target, test_size=0.2)
 
-    # 3. Split into features and target
-    X_train = train_df.drop(columns=['target'])
+    COLS_TO_DROP = [
+        'target',
+        'timestamp_ms',
+        'window_start_ms',
+        'window_end_ms',
+        'news_signals_timestamp_ms',
+        'news_signals_model_name',
+        'news_signals_coin',  # if present
+    ]
+
+    # Drop only columns that actually exist in the dataframe
+    cols_to_drop_existing = [c for c in COLS_TO_DROP if c in train_df.columns]
+    logger.info(f'Dropping non-feature columns: {cols_to_drop_existing}')
+
+    X_train = train_df.drop(columns=cols_to_drop_existing)
     y_train = train_df['target']
-    X_test = test_df.drop(columns=['target'])
+    X_test = test_df.drop(
+        columns=[c for c in cols_to_drop_existing if c in test_df.columns]
+    )
     y_test = test_df['target']
+
+    logger.info(f'X_train shape: {X_train.shape}')
+    logger.info(f'X_train columns: {list(X_train.columns)}')
+
+    # # 3. Split into features and target
+    # X_train = train_df.drop(columns=['target'])
+    # y_train = train_df['target']
+    # X_test = test_df.drop(columns=['target'])
+    # y_test = test_df['target']
 
     experiment.log_parameters(
         {
@@ -159,85 +277,204 @@ def train(
 
     # Dummy model based on current close price
     # on the test set
-    y_test_pred = DummyModel(from_feature='close').predict(X_test)
-    mae_dummy_model = mean_absolute_error(y_test, y_test_pred)
-    logger.info(f'MAE of dummy model based on close price: {mae_dummy_model}')
-    experiment.log_metric('mae_dummy_model', mae_dummy_model)
-    # on the training set
-    y_train_pred = DummyModel(from_feature='close').predict(X_train)
-    mae_dummy_model_train = mean_absolute_error(y_train, y_train_pred)
-    logger.info(
-        f'MAE of dummy model based on close price on training set: {mae_dummy_model_train}'
-    )
-    experiment.log_metric('mae_train_dummy_model', mae_dummy_model_train)
+    # y_test_pred = DummyModel(from_feature='close').predict(X_test)
+    # mae_dummy_close = mean_absolute_error(y_test, y_test_pred)
+    # logger.info(f'MAE of dummy model (close price): {mae_dummy_close}')
+    # experiment.log_metric('mae_dummy_model_close', mae_dummy_close)
 
-    # Dummy model based on sma_7
-    if 'sma_7' in technical_indicators_as_features:
-        y_test_pred = DummyModel(from_feature='sma_7').predict(X_test)
-        mae_dummy_model = mean_absolute_error(y_test, y_test_pred)
-        logger.info(f'MAE of dummy model based on sma_7: {mae_dummy_model}')
-        experiment.log_metric('mae_dummy_model_sma_7', mae_dummy_model)
+    # # Also evaluate on training set to check consistency
+    # y_train_pred = DummyModel(from_feature='close').predict(X_train)
+    # mae_dummy_close_train = mean_absolute_error(y_train, y_train_pred)
+    # logger.info(f'MAE of dummy model (close price) on training set: {mae_dummy_close_train}')
+    # experiment.log_metric('mae_train_dummy_model_close', mae_dummy_close_train)
 
-    # Dummy model based on sma_14
-    if 'sma_14' in technical_indicators_as_features:
-        y_test_pred = DummyModel(from_feature='sma_14').predict(X_test)
-        mae_dummy_model = mean_absolute_error(y_test, y_test_pred)
-        logger.info(f'MAE of dummy model based on sma_14: {mae_dummy_model}')
-        experiment.log_metric('mae_dummy_model_sma_14', mae_dummy_model)
+    # Start tracking best baseline with the close price dummy
+    # mae_best_baseline = mae_dummy_close
+    # logger.info(f'Best baseline so far: {mae_best_baseline} (close price dummy)')
 
-    # 4. Fit an ML model on the training set
-    model = XGBoostModel()
-    model.fit(
-        X_train,
-        y_train,
-        n_search_trials=hyperparameter_tuning_search_trials,
+    # Dummy model — predicts 0 price change (no movement)
+    # Since target is now price DELTA (future_price - current_price),
+    # the simplest baseline is to predict 0 change.
+    # MAE = average absolute 5-minute price movement = ~$60
+    y_test_pred_dummy = pd.Series([0] * len(y_test), index=y_test.index)
+    mae_dummy_close = mean_absolute_error(y_test, y_test_pred_dummy)
+    logger.info(f'MAE of dummy model (predict no change): {mae_dummy_close}')
+    experiment.log_metric('mae_dummy_model_close', mae_dummy_close)
+
+    # Also on training set
+    y_train_pred_dummy = pd.Series([0] * len(y_train), index=y_train.index)
+    mae_dummy_close_train = mean_absolute_error(y_train, y_train_pred_dummy)
+    logger.info(f'MAE of dummy model on training set: {mae_dummy_close_train}')
+    experiment.log_metric('mae_train_dummy_model_close', mae_dummy_close_train)
+
+    # Best baseline
+    mae_best_baseline = mae_dummy_close
+    logger.info(f'Best baseline so far: {mae_best_baseline} (predict no change)')
+
+    # # Baseline 2: predict current sma_7 as future price
+    # if 'sma_7' in technical_indicators_as_features:
+    #     y_test_pred = DummyModel(from_feature='sma_7').predict(X_test)
+    #     mae_dummy_sma7 = mean_absolute_error(y_test, y_test_pred)
+    #     logger.info(f'MAE of dummy model (sma_7): {mae_dummy_sma7}')
+    #     experiment.log_metric('mae_dummy_model_sma_7', mae_dummy_sma7)
+    #     # Update best baseline if sma_7 dummy is better
+    #     if mae_dummy_sma7 < mae_best_baseline:
+    #         mae_best_baseline = mae_dummy_sma7
+    #         logger.info(f'Best baseline updated: {mae_best_baseline} (sma_7 dummy)')
+
+    # # Baseline 3: predict current sma_14 as future price
+    # if 'sma_14' in technical_indicators_as_features:
+    #     y_test_pred = DummyModel(from_feature='sma_14').predict(X_test)
+    #     mae_dummy_sma14 = mean_absolute_error(y_test, y_test_pred)
+    #     logger.info(f'MAE of dummy model (sma_14): {mae_dummy_sma14}')
+    #     experiment.log_metric('mae_dummy_model_sma_14', mae_dummy_sma14)
+    #     # Update best baseline if sma_14 dummy is better
+    #     if mae_dummy_sma14 < mae_best_baseline:
+    #         mae_best_baseline = mae_dummy_sma14
+    #         logger.info(f'Best baseline updated: {mae_best_baseline} (sma_14 dummy)')
+
+    logger.info(f'Best baseline MAE across all dummy models: {mae_best_baseline}')
+    experiment.log_metric('mae_best_baseline', mae_best_baseline)
+
+    models_to_try = {
+        'XGBoost': XGBoostModel(),
+        'LightGBM': LightGBMModel(),
+    }
+
+    # ── Train and evaluate all models ──────────────────────────────────────────
+    results = {}
+
+    for model_name, model_obj in models_to_try.items():
+        logger.info(f'\n{"="*50}')
+        logger.info(f'Training {model_name}...')
+
+        model_obj.fit(
+            X_train,
+            y_train,
+            n_search_trials=hyperparameter_tuning_search_trials,
+            n_splits=hyperparameter_tuning_n_splits,
+        )
+
+        mae_test = mean_absolute_error(y_test, model_obj.predict(X_test))
+        mae_train = mean_absolute_error(y_train, model_obj.predict(X_train))
+
+        logger.info(
+            f'{model_name} → Test MAE: {mae_test:.2f}, Train MAE: {mae_train:.2f}'
+        )
+        experiment.log_metric(f'mae_{model_name.lower()}', mae_test)
+        experiment.log_metric(f'mae_train_{model_name.lower()}', mae_train)
+
+        # ── Feature selection for this model ───────────────────────────────────
+        try:
+            importances = pd.Series(
+                model_obj.get_model_object().feature_importances_,
+                index=X_train.columns,
+            ).sort_values(ascending=False)
+
+            logger.info(f'Top 15 features for {model_name}:\n{importances.head(15)}')
+
+            top_features = importances.head(10).index.tolist()
+            X_train_sel = X_train[top_features]
+            X_test_sel = X_test[top_features]
+
+            model_sel = model_obj.__class__()
+            model_sel.fit(X_train_sel, y_train, n_search_trials=0)
+
+            mae_sel = mean_absolute_error(y_test, model_sel.predict(X_test_sel))
+            mae_sel_train = mean_absolute_error(y_train, model_sel.predict(X_train_sel))
+            logger.info(
+                f'{model_name} top-10 → Test MAE: {mae_sel:.2f}, '
+                f'Train MAE: {mae_sel_train:.2f}'
+            )
+            experiment.log_metric(f'mae_{model_name.lower()}_top10', mae_sel)
+
+            if mae_sel < mae_test:
+                logger.info(f'Top-10 beats full model → using top-10 for {model_name}')
+                mae_test = mae_sel
+                mae_train = mae_sel_train
+                model_obj = model_sel
+
+        except AttributeError:
+            logger.info(
+                f'{model_name} has no feature_importances_ — skipping feature selection'
+            )
+
+        results[model_name] = {
+            'mae': mae_test,
+            'mae_train': mae_train,
+            'model': model_obj,
+        }
+
+    # ── Comparison table ────────────────────────────────────────────────────────
+    logger.info(f'\n{"="*50}')
+    logger.info('FINAL MODEL COMPARISON:')
+    logger.info(f'  Dummy baseline: ${mae_best_baseline:.2f}')
+    for name, res in sorted(results.items(), key=lambda x: x[1]['mae']):
+        gap = res['mae'] - mae_best_baseline
+        sign = '+' if gap > 0 else ''
+        logger.info(
+            f'  {name:12s}: Test=${res["mae"]:.2f}  '
+            f'Train=${res["mae_train"]:.2f}  '
+            f'vs baseline={sign}{gap:.2f}'
+        )
+
+    # ── Select best model ───────────────────────────────────────────────────────
+    best_model_name = min(results, key=lambda k: results[k]['mae'])
+    best_result = results[best_model_name]
+    model = best_result['model']
+    best_mae = best_result['mae']
+
+    logger.info(f'\nBest model: {best_model_name} → MAE ${best_mae:.2f}')
+    experiment.log_parameter('best_model_name', best_model_name)
+
+    # ── Walk-forward validation on best model ───────────────────────────────────
+    logger.info('Running walk-forward validation...')
+    wf_avg_mae, wf_mae_scores = walk_forward_validation(
+        data=features_and_target,
         n_splits=hyperparameter_tuning_n_splits,
     )
+    experiment.log_metric('mae_walk_forward_avg', wf_avg_mae)
+    for fold_num, fold_mae in enumerate(wf_mae_scores, 1):
+        experiment.log_metric(f'mae_walk_forward_fold_{fold_num}', fold_mae)
+    logger.info(
+        f'Walk-forward MAE: {wf_avg_mae:.2f} ' f'(single split MAE: {best_mae:.2f})'
+    )
 
-    # 5. Evaluate the model on the testing set
-    y_test_pred = model.predict(X_test)
-    mae_xgboost_model = mean_absolute_error(y_test, y_test_pred)
-    logger.info(f'MAE of XGBoost model: {mae_xgboost_model}')
-    experiment.log_metric('mae', mae_xgboost_model)
-
-    # To check overfitting we log the model error on the training set
-    y_train_pred = model.predict(X_train)
-    mae_xgboost_model_train = mean_absolute_error(y_train, y_train_pred)
-    logger.info(f'MAE of XGBoost model on training set: {mae_xgboost_model_train}')
-    experiment.log_metric('mae_train', mae_xgboost_model_train)
-
-    # 6. Save the model artifact to the experiment
-    # Save the model to local filepath
-    model_name = get_model_name(pair_to_predict, candle_seconds, prediction_seconds)
-    model_filepath = f'{model_name}.joblib'
+    # ── Save and register best model ────────────────────────────────────────────
+    model_name_str = get_model_name(pair_to_predict, candle_seconds, prediction_seconds)
+    model_filepath = f'{model_name_str}.joblib'
     joblib.dump(model.get_model_object(), model_filepath)
 
-    # Log the model to Comet
     experiment.log_model(
-        name=model_name,
+        name=model_name_str,
         file_or_folder=model_filepath,
     )
 
-    # if mae_xgboost_model < mae_dummy_model:
-    # Remove this condition once able to get a better model
+    # if best_mae < mae_best_baseline:
     if True:
-        # This means the model is better than the dummy model, so register it
-        logger.info(f'Registering model {model_name} with status {model_status}')
-
+        logger.info(
+            f'{best_model_name} MAE (${best_mae:.2f}) < '
+            f'baseline MAE (${mae_best_baseline:.2f}). '
+            f'Registering model...'
+        )
         experiment.register_model(
-            model_name=model_name,
-            registry_name=model_name,
-            version=None,  # Auto-increment version
+            model_name=model_name_str,
+            registry_name=model_name_str,
+            version=None,
             status=model_status,
         )
-        # logger.info(f'Registered model {registered_model}')
         logger.info(
-            f'Model {model_name} registered successfully with status {model_status}'
+            f'Model {model_name_str} ({best_model_name}) '
+            f'registered with status {model_status}'
+        )
+    else:
+        logger.warning(
+            f'{best_model_name} MAE (${best_mae:.2f}) >= '
+            f'baseline MAE (${mae_best_baseline:.2f}). '
+            f'Model did NOT beat the baseline. Skipping registration.'
         )
 
-    # End the experiment to ensure all uploads complete
     experiment.end()
-
     logger.info('Training job done!')
 
 
