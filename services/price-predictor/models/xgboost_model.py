@@ -32,6 +32,7 @@ class XGBoostModel:
         y: pd.Series,
         n_search_trials: Optional[int] = 0,
         n_splits: Optional[int] = 3,
+        best_params: dict = None,
         # hyperparameter_tuning: bool = False,
     ):
         """
@@ -44,8 +45,23 @@ class XGBoostModel:
             hyperparameter_tuning (bool): Whether to perform hyperparameter tuning.
         """
         if n_search_trials == 0:
-            logger.info('Fitting XGBoost model without hyperparameter tuning')
-            self.model = XGBRegressor()
+            if best_params:
+                logger.info('Fitting XGBoost with provided best params')
+                self.model = XGBRegressor(**best_params)
+            else:
+                logger.info('Fitting XGBoost model without hyperparameter tuning')
+                self.model = XGBRegressor(
+                    objective='reg:squarederror',
+                    n_estimators=300,
+                    max_depth=4,
+                    learning_rate=0.01,
+                    subsample=0.7,
+                    colsample_bytree=0.7,
+                    min_child_weight=10,
+                    reg_alpha=0.1,
+                    reg_lambda=1.0,
+                    random_state=42,
+                )
 
         else:
             # TODO: Implement hyperparameter tuning

@@ -16,12 +16,15 @@ class LightGBMModel:
         y: pd.Series,
         n_search_trials: int = 0,
         n_splits: int = 3,
+        best_params: dict = None,
     ):
         if n_search_trials > 0:
             logger.info(
                 f'Fitting LightGBM with {n_search_trials} hyperparameter trials'
             )
             best_params = self._find_best_hyperparams(X, y, n_search_trials, n_splits)
+        elif best_params is not None:  # ← add this block
+            logger.info('Fitting LightGBM with provided best params')
         else:
             logger.info('Fitting LightGBM without hyperparameter tuning')
             best_params = {
@@ -32,8 +35,12 @@ class LightGBMModel:
                 'colsample_bytree': 0.7,
             }
 
+        clean_params = {
+            k: v for k, v in best_params.items() if k not in ('random_state', 'verbose')
+        }
+
         self.model = lgb.LGBMRegressor(
-            **best_params,
+            **clean_params,
             random_state=42,
             verbose=-1,
         )

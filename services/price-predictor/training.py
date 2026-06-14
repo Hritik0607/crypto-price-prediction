@@ -15,6 +15,8 @@ from sklearn.metrics import mean_absolute_error
 def walk_forward_validation(
     data: pd.DataFrame,
     n_splits: int = 5,
+    model_name: str = 'XGBoost',
+    best_params: dict = None,
 ) -> tuple[float, list[float]]:
     """
     Performs walk-forward validation on the full dataset.
@@ -62,11 +64,15 @@ def walk_forward_validation(
         #   - It would be extremely slow (n_splits * n_trials models trained)
         #   - The goal here is evaluation, not param finding
         #   - Hyperparameter tuning already happened before this step
-        fold_model = XGBoostModel()
+        if model_name == 'LightGBM':
+            fold_model = LightGBMModel()
+        else:
+            fold_model = XGBoostModel()
         fold_model.fit(
             X_train_fold,
             y_train_fold,
             n_search_trials=0,  # no tuning per fold — just train with defaults
+            best_params=best_params,
         )
 
         # Evaluate on the validation set (future data the model never saw)
@@ -274,28 +280,6 @@ def train(
     )
 
     # 3. Evaluate quick baseline models
-
-    # Dummy model based on current close price
-    # on the test set
-    # y_test_pred = DummyModel(from_feature='close').predict(X_test)
-    # mae_dummy_close = mean_absolute_error(y_test, y_test_pred)
-    # logger.info(f'MAE of dummy model (close price): {mae_dummy_close}')
-    # experiment.log_metric('mae_dummy_model_close', mae_dummy_close)
-
-    # # Also evaluate on training set to check consistency
-    # y_train_pred = DummyModel(from_feature='close').predict(X_train)
-    # mae_dummy_close_train = mean_absolute_error(y_train, y_train_pred)
-    # logger.info(f'MAE of dummy model (close price) on training set: {mae_dummy_close_train}')
-    # experiment.log_metric('mae_train_dummy_model_close', mae_dummy_close_train)
-
-    # Start tracking best baseline with the close price dummy
-    # mae_best_baseline = mae_dummy_close
-    # logger.info(f'Best baseline so far: {mae_best_baseline} (close price dummy)')
-
-    # Dummy model — predicts 0 price change (no movement)
-    # Since target is now price DELTA (future_price - current_price),
-    # the simplest baseline is to predict 0 change.
-    # MAE = average absolute 5-minute price movement = ~$60
     y_test_pred_dummy = pd.Series([0] * len(y_test), index=y_test.index)
     mae_dummy_close = mean_absolute_error(y_test, y_test_pred_dummy)
     logger.info(f'MAE of dummy model (predict no change): {mae_dummy_close}')
@@ -403,6 +387,7 @@ def train(
             'mae': mae_test,
             'mae_train': mae_train,
             'model': model_obj,
+            'params': model_obj.get_model_object().get_params(),
         }
 
     # ── Comparison table ────────────────────────────────────────────────────────
@@ -432,6 +417,8 @@ def train(
     wf_avg_mae, wf_mae_scores = walk_forward_validation(
         data=features_and_target,
         n_splits=hyperparameter_tuning_n_splits,
+        model_name=best_model_name,
+        best_params=best_result.get('params', None),
     )
     experiment.log_metric('mae_walk_forward_avg', wf_avg_mae)
     for fold_num, fold_mae in enumerate(wf_mae_scores, 1):
@@ -450,8 +437,8 @@ def train(
         file_or_folder=model_filepath,
     )
 
-    # if best_mae < mae_best_baseline:
-    if True:
+    if best_mae < mae_best_baseline:
+        # if True:
         logger.info(
             f'{best_model_name} MAE (${best_mae:.2f}) < '
             f'baseline MAE (${mae_best_baseline:.2f}). '
