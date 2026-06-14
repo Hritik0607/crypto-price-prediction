@@ -83,6 +83,9 @@ def main(
         broker_address=kafka_broker_address,
         consumer_group=kafka_consumer_group,
         auto_offset_reset='latest' if data_source == 'live' else 'earliest',
+        consumer_extra_config={
+            'max.poll.interval.ms': 1800000  # 30 minutes
+        },
     )
 
     # Define the input and output topics
