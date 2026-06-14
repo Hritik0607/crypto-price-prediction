@@ -1,0 +1,14 @@
+[project]
+name = "prediction-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "elasticsearch>=8.0.0,<9.0.0",
+    "fastapi>=0.136.3",
+    "httpx2>=2.2.0",
+    "loguru>=0.7.3",
+    "pydantic-settings>=2.14.1",
+    "uvicorn[standard]>=0.48.0",
+]
