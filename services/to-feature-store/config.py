@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     feature_group_materialization_interval_minutes: Optional[int] = 15
 
     data_source: Literal['live', 'historical', 'test']
+    data_sink: str = 'hopsworks'
 
 
 class HopsworksCredentials(BaseSettings):

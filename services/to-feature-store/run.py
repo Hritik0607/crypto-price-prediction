@@ -2,7 +2,7 @@ from typing import Literal
 
 from loguru import logger
 from quixstreams import Application
-from sinks import HopsworksFeatureStoreSink
+from sinks import HopsworksFeatureStoreSink, ParquetSink
 
 
 def main(
@@ -32,6 +32,9 @@ def main(
         broker_address=kafka_broker_address,
         consumer_group=kafka_consumer_group,
         auto_offset_reset='latest' if data_source == 'live' else 'earliest',
+        consumer_extra_config={
+            'max.poll.interval.ms': 1800000  # 30 minutes
+        },
     )
     input_topic = app.topic(kafka_input_topic, value_deserializer='json')
 
@@ -53,19 +56,25 @@ if __name__ == '__main__':
     from config import config, hopsworks_credentials
 
     # Sink to save data to the feature store
-    hopsworks_sink = HopsworksFeatureStoreSink(
-        # Hopsworks credentials
-        api_key=hopsworks_credentials.hopsworks_api_key,
-        project_name=hopsworks_credentials.hopsworks_project_name,
-        host_dns=hopsworks_credentials.hopsworks_host,
-        # Feature group configuration
-        feature_group_name=config.feature_group_name,
-        feature_group_version=config.feature_group_version,
-        feature_group_primary_keys=config.feature_group_primary_keys,
-        feature_group_event_time=config.feature_group_event_time,
-        feature_group_materialization_interval_minutes=config.feature_group_materialization_interval_minutes,
-        enable_online=(config.data_source == 'live'),
-    )
+    if config.data_sink == 'parquet':
+        logger.info('Using ParquetSink for local Parquet files')
+        hopsworks_sink = ParquetSink(
+            feature_group_name=config.feature_group_name,
+            feature_group_version=config.feature_group_version,
+        )
+    else:
+        logger.info('Using HopsworksFeatureStoreSink')
+        hopsworks_sink = HopsworksFeatureStoreSink(
+            api_key=hopsworks_credentials.hopsworks_api_key,
+            project_name=hopsworks_credentials.hopsworks_project_name,
+            host_dns=hopsworks_credentials.hopsworks_host,
+            feature_group_name=config.feature_group_name,
+            feature_group_version=config.feature_group_version,
+            feature_group_primary_keys=config.feature_group_primary_keys,
+            feature_group_event_time=config.feature_group_event_time,
+            feature_group_materialization_interval_minutes=config.feature_group_materialization_interval_minutes,
+            enable_online=(config.data_source == 'live'),
+        )
 
     main(
         kafka_broker_address=config.kafka_broker_address,
