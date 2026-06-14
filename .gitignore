@@ -207,6 +207,7 @@ ca.cert
 **/state
 **/setup_credentials.sh
 *.csv
+*.pyc
 **/credentials.env
 .venv/
 certificates/
@@ -219,6 +220,10 @@ anthropic.env
 *.rar
 **/comet_ml_credentials.env
 **/*.joblib
+code_test.py
+verify_feature_group.py
 
 # direnv
 .env.local
+data/
+cursors/
