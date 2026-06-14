@@ -27,7 +27,7 @@ services:
       - redpanda_network
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
-      - KAFKA_INPUT_TOPIC=trades_historical_${RUN_ID}
+      - KAFKA_INPUT_TOPIC=trades_historical
       - KAFKA_OUTPUT_TOPIC=candles_historical_${RUN_ID}
       - KAFKA_CONSUMER_GROUP=candles_historical_${RUN_ID}
       - CANDLE_SECONDS=60
@@ -71,4 +71,7 @@ services:
       - FEATURE_GROUP_PRIMARY_KEYS=["pair", "candle_seconds"]
       - FEATURE_GROUP_EVENT_TIME=timestamp_ms
       - DATA_SOURCE=historical
+      - DATA_SINK=parquet
+    volumes:
+    - ../services/to-feature-store/data:/app/data
     restart: always
