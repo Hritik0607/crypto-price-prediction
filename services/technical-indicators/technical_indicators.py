@@ -1,6 +1,9 @@
 import numpy as np
+from loguru import logger
 from quixstreams import State
 from talib import stream
+
+MIN_CANDLES_REQUIRED = 40
 
 
 def compute_indicators(
@@ -11,6 +14,14 @@ def compute_indicators(
     Computes the technical indicators from the candles in the state
     """
     candles = state.get('candles', [])
+
+    if len(candles) < MIN_CANDLES_REQUIRED:
+        logger.debug(
+            f'Not enough candles for {candle["pair"]}: '
+            f'{len(candles)}/{MIN_CANDLES_REQUIRED}. '
+            f'Skipping to avoid NaN values in Feature Store.'
+        )
+        return None
 
     # extract open, high, low, close from the candles
     # open = np.array([candle['open'] for candle in candles])

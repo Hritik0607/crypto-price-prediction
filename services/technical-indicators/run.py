@@ -37,6 +37,9 @@ def main(
         broker_address=kafka_broker_address,
         consumer_group=kafka_consumer_group,
         auto_offset_reset='latest' if data_source == 'live' else 'earliest',
+        consumer_extra_config={
+            'max.poll.interval.ms': 1800000  # 30 minutes
+        },
     )
 
     # Define the input and output topics of our streaming application
@@ -59,6 +62,12 @@ def main(
 
     # Compute the technical indicators from the candles in the state
     sdf = sdf.apply(compute_indicators, stateful=True)
+
+    # Filter out None values — compute_indicators returns None when there
+    # are not enough candles in state for all indicators to produce valid
+    # non-NaN values. We must drop these to protect the Feature Store.
+    # Without this filter, None flows into the coin lambda below and crashes.
+    sdf = sdf.filter(lambda value: value is not None)
 
     # Add a `coin` field to the final message
     sdf = sdf.apply(lambda value: {**value, 'coin': value['pair'].split('/')[0]})
