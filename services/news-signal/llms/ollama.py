@@ -12,7 +12,7 @@ class OllamaNewsSignalExtractor(BaseNewsSignalExtractor):
         model_name: str,
         base_url: str,
         temperature: Optional[float] = 0,
-        request_timeout: Optional[int] = 300,
+        request_timeout: Optional[int] = 60,
     ):
         self.llm = Ollama(
             model=model_name,
@@ -21,7 +21,7 @@ class OllamaNewsSignalExtractor(BaseNewsSignalExtractor):
             request_timeout=request_timeout,
             additional_kwargs={
                 'num_ctx': 4096,  # 🔑 FIX: limits context memory
-                'num_predict': 512,  # 🔑 FIX: limits output tokens
+                'num_predict': 1024,  # 🔑 FIX: limits output tokens
             },
         )
 

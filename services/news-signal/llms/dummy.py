@@ -16,7 +16,7 @@ class DummyNewsSignalExtractor(BaseNewsSignalExtractor):
         self,
         text: str,
         output_format: Literal['dict', 'NewsSignal'] = 'NewsSignal',
-    ) -> dict | NewsSignal:
+    ) -> list[dict] | NewsSignal:
         """
         Always returns a NewsSignal with a signal of 1 for BTC and 0 for ETH
 
@@ -31,11 +31,11 @@ class DummyNewsSignalExtractor(BaseNewsSignalExtractor):
             return [
                 {
                     'coin': 'BTC',
-                    'signal': 1,
+                    'signal': 0,
                 },
                 {
                     'coin': 'ETH',
-                    'signal': -1,
+                    'signal': 0,
                 },
                 {
                     'coin': 'XRP',

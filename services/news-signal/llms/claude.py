@@ -47,8 +47,8 @@ class ClaudeNewsSignalExtractor(BaseNewsSignalExtractor):
     def get_signal(
         self,
         text: str,
-        output_format: Literal['dict', 'NewsSignal'] = 'NewsSignal',
-    ) -> NewsSignal | dict:
+        output_format: Literal['list', 'NewsSignal'] = 'NewsSignal',
+    ) -> list[dict] | NewsSignal:
         response: NewsSignal = self.llm.structured_predict(
             NewsSignal,
             prompt=self.prompt_template,
@@ -56,14 +56,14 @@ class ClaudeNewsSignalExtractor(BaseNewsSignalExtractor):
         )
 
         # keep only news signals with non-zero signal
-        # response.news_signals = [
-        #     news_signal
-        #     for news_signal in response.news_signals
-        #     if news_signal.signal != 0
-        # ]
+        response.news_signals = [
+            news_signal
+            for news_signal in response.news_signals
+            if news_signal.signal != 0
+        ]
 
-        if output_format == 'dict':
-            return response.to_dict()
+        if output_format == 'list':
+            return response.model_dump()['news_signals']
         else:
             return response
 

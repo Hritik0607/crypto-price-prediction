@@ -14,5 +14,8 @@ class Config(BaseSettings):
     model_provider: Literal['anthropic', 'ollama', 'dummy']
     data_source: Literal['live', 'historical']
 
+    llm_max_retries: int = 3
+    llm_initial_retry_delay_seconds: int = 1
+
 
 config = Config()
