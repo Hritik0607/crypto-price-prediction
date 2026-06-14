@@ -12,6 +12,9 @@ class Config(BaseSettings):
     pairs: List[str]
     data_source: Literal['live', 'historical', 'test']
     last_n_days: Optional[int] = None
+    rest_api_max_retries: int = 5
+    rest_api_initial_delay_seconds: int = 1
+    cursor_dir: Optional[str] = 'cursors'
 
 
 config = Config()

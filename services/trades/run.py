@@ -35,7 +35,7 @@ def main(kafka_broker_address: str, kafka_topic: str, trades_api: TradesAPI):
 
     with app.get_producer() as producer:
         while not trades_api.is_done():
-            trades = kraken_api.get_trades()
+            trades = trades_api.get_trades()
 
             for trade in trades:
                 # serialize the trade as bytes
@@ -59,7 +59,13 @@ if __name__ == '__main__':
     if config.data_source == 'live':
         kraken_api = KrakenWebsocketAPI(pairs=config.pairs)
     elif config.data_source == 'historical':
-        kraken_api = KrakenRestAPI(pairs=config.pairs, last_n_days=config.last_n_days)
+        kraken_api = KrakenRestAPI(
+            pairs=config.pairs,
+            last_n_days=config.last_n_days,
+            max_retries=config.rest_api_max_retries,
+            initial_delay_seconds=config.rest_api_initial_delay_seconds,
+            cursor_dir=config.cursor_dir,
+        )
     elif config.data_source == 'test':
         kraken_api = KrakenMockAPI(pairs=config.pairs)
     else:

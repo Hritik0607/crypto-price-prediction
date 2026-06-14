@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel
 
@@ -61,14 +61,18 @@ class Trade(BaseModel):
 
     @staticmethod
     def _milliseconds2datestr(milliseconds: int) -> str:
-        return datetime.fromtimestamp(milliseconds / 1000).strftime(
-            '%Y-%m-%dT%H:%M:%S.%fZ'
-        )
+        return datetime.fromtimestamp(
+            milliseconds / 1000,
+            tz=timezone.utc,  # ← add this
+        ).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
     @staticmethod
     def _datestr2milliseconds(datestr: str) -> int:
         return int(
-            datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%fZ').timestamp() * 1000
+            datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%fZ')
+            .replace(tzinfo=timezone.utc)  # ← add this
+            .timestamp()
+            * 1000
         )
 
     def to_str(self) -> str:
