@@ -330,8 +330,8 @@
   <div class="stats-footer">
     <div class="stat-card">
       <div class="stat-label">Model</div>
-      <div class="stat-value">XGBoost</div>
-      <div class="stat-sub">Trained on 150 days of data</div>
+      <div class="stat-value">LightGBM</div>
+      <div class="stat-sub">Trained on 90 days of data</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Prediction Horizon</div>
@@ -340,8 +340,8 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">Features</div>
-      <div class="stat-value">23 indicators</div>
-      <div class="stat-sub">RSI, MACD, Ichimoku, Bollinger...</div>
+      <div class="stat-value">13 indicators</div>
+      <div class="stat-sub">RSI, MACD, ADX, MFI, ATR...</div>
     </div>
   </div>
 
@@ -443,9 +443,9 @@
     const errPctEl = document.getElementById('latestErrorPct');
     if (latestErr) {
       const err = latestErr.error;
-      errEl.textContent = formatError(err);
-      errEl.className = `metric-value ${err >= 0 ? 'up' : 'down'}`;
-      errPctEl.textContent = `${latestErr.pct_error.toFixed(2)}% · At ${formatTime(latestErr.actual_timestamp_iso)}`;
+      errEl.textContent = `${formatError(err)} (${latestErr.pct_error.toFixed(2)}%)`;
+      errEl.className = `metric-value down`;
+      errPctEl.textContent = `At ${formatTime(latestErr.actual_timestamp_iso)}`;
     } else {
       errEl.textContent = '—';
       errEl.className = 'metric-value neutral';
