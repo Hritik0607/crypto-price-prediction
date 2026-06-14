@@ -71,6 +71,21 @@ backfill-news-signals: build-news-signal-historical
 	@echo "Starting backfill of news signals with RUN_ID: $(RUN_ID)"
 	powershell -NoProfile -Command "$$env:RUN_ID='$(RUN_ID)'; docker compose -f news-signal-historical.yml up -d
 
+
+########################################
+## Inference pipeline 
+########################################
+
+# for live data
+build-inference-live:
+	docker compose -f inference-live.yml build
+
+start-inference-live: build-inference-live
+	docker compose -f inference-live.yml up -d
+
+stop-inference-live:
+	docker compose -f inference-live.yml down
+
 	
 ########################################
 ## Clean up

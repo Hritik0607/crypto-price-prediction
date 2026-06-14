@@ -1,0 +1,51 @@
+version: '3.7'
+name: inference-live
+networks:
+  redpanda_network:
+    external: true
+    name: redpanda_network
+services:
+  price-predictor:
+    build:
+      context: ../services/price-predictor
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    env_file:
+      - ../services/price-predictor/inference.settings.env
+      - ../services/price-predictor/hopsworks_credentials.env
+      - ../services/price-predictor/comet_ml_credentials.env
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+    restart: always
+
+  prediction-api:
+    build:
+      context: ../services/prediction-api
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    env_file:
+      - ../services/prediction-api/settings.env
+      # Uncomment this if you want to use Anthropic, and below set the MODEL_PROVIDER to anthropic
+      # - ../services/prediction-api/anthropic_credentials.env
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    ports:
+      - "8081:8081"
+    restart: always
+
+  monitoring-service:
+    build:
+      context: ../services/monitoring-service
+      dockerfile: Dockerfile
+    networks:
+      - redpanda_network
+    env_file:
+      - ../services/monitoring-service/settings.env
+    environment:
+      - KAFKA_BROKER_ADDRESS=redpanda:9092
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    ports:
+      - "8082:8082"
+    restart: always
