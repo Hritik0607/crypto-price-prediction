@@ -15,8 +15,9 @@ class XGBoostModel:
 
     def __init__(self):
         self.model = XGBRegressor(
-            objective='reg:absoluteerror',
+            objective='reg:squarederror',
             eval_metric=['mae'],
+            random_state=42,
         )
 
     def get_model_object(self):
@@ -99,14 +100,33 @@ class XGBoostModel:
             """
             # we ask Optuna to sample the next set of hyperparameters
             # these are our candidates for this trial
+            # params = {
+            #     'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+            #     'max_depth': trial.suggest_int('max_depth', 3, 10),
+            #     'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3),
+            #     'subsample': trial.suggest_float('subsample', 0.5, 1.0),
+            #     'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
+            #     # Complete list of hyperparameters:
+            #     # https://xgboost.readthedocs.io/en/stable/parameter.html
+            # }
+
             params = {
+                # Original parameters
                 'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
-                'max_depth': trial.suggest_int('max_depth', 3, 10),
-                'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3),
+                'max_depth': trial.suggest_int('max_depth', 2, 8),
+                'learning_rate': trial.suggest_float(
+                    'learning_rate', 0.005, 0.1, log=True
+                ),
                 'subsample': trial.suggest_float('subsample', 0.5, 1.0),
                 'colsample_bytree': trial.suggest_float('colsample_bytree', 0.5, 1.0),
-                # Complete list of hyperparameters:
-                # https://xgboost.readthedocs.io/en/stable/parameter.html
+                # New regularization parameters
+                'min_child_weight': trial.suggest_int('min_child_weight', 1, 50),
+                'gamma': trial.suggest_float('gamma', 0.0, 5.0),
+                'reg_alpha': trial.suggest_float('reg_alpha', 0.0, 10.0),
+                'reg_lambda': trial.suggest_float('reg_lambda', 0.0, 10.0),
+                # Fixed
+                'objective': 'reg:squarederror',
+                'random_state': 42,
             }
 
             # Split X_train into n_splits folds with a time-series split
