@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Crypto Monitoring Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .header h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1a2f1a;
+      color: #3fb950;
+      border: 1px solid #3fb950;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      background: #3fb950;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: #8b949e;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #8b949e;
+    }
+
+    .status-dot.connected { background: #3fb950; }
+    .status-dot.disconnected { background: #f85149; }
+
+    /* ── Pair selector tabs ── */
+    .pair-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .pair-tab {
+      padding: 8px 20px;
+      border-radius: 8px;
+      border: 1px solid #21262d;
+      background: #161b22;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .pair-tab:hover { border-color: #388bfd; color: #e6edf3; }
+    .pair-tab.active {
+      background: #1c2333;
+      border-color: #388bfd;
+      color: #388bfd;
+    }
+
+    /* ── Main metrics row ── */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .metrics-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .metric-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .metric-label {
+      font-size: 0.7rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #e6edf3;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-value.up { color: #3fb950; }
+    .metric-value.down { color: #f85149; }
+    .metric-value.neutral { color: #8b949e; }
+
+    .metric-sub {
+      font-size: 0.75rem;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+
+    .metric-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .metric-badge.up { background: #1a2f1a; color: #3fb950; }
+    .metric-badge.down { background: #2d1b1b; color: #f85149; }
+    .metric-badge.neutral { background: #21262d; color: #8b949e; }
+
+    /* ── Charts ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .chart-header {
+      margin-bottom: 16px;
+    }
+
+    .chart-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    .chart-subtitle {
+      font-size: 0.75rem;
+      color: #8b949e;
+      margin-top: 2px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 220px;
+    }
+
+    /* ── Stats footer ── */
+    .stats-footer {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    .stat-sub {
+      font-size: 0.75rem;
+      color: #8b949e;
+      margin-top: 2px;
+    }
+
+    .last-updated {
+      text-align: center;
+      color: #8b949e;
+      font-size: 0.75rem;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      📊 Model Monitoring Dashboard
+      <span class="live-badge">
+        <span class="live-dot"></span>
+        LIVE
+      </span>
+    </h1>
+    <div class="header-right">
+      <div class="status-indicator">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+      </div>
+      <span id="countdown"></span>
+    </div>
+  </div>
+
+  <!-- Pair tabs -->
+  <div class="pair-tabs" id="pairTabs"></div>
+
+  <!-- Main metrics -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-label">Current Price</div>
+      <div class="metric-value" id="currentPrice">—</div>
+      <div class="metric-sub" id="currentPriceTime">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Our Prediction (5 min)</div>
+      <div class="metric-value" id="predictionPrice">—</div>
+      <div id="predictionBadge" class="metric-badge neutral">—</div>
+      <div class="metric-sub" id="predictionTime">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Latest Error</div>
+      <div class="metric-value" id="latestError">—</div>
+      <div class="metric-sub" id="latestErrorPct">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Mean Absolute Error (24h)</div>
+      <div class="metric-value" id="maeValue">—</div>
+      <div class="metric-sub" id="maeSub">Based on last <span id="errorCount">0</span> predictions</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <!-- Price + Prediction chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title" id="priceChartTitle">Price History</div>
+        <div class="chart-subtitle">
+          Actual price (blue) · Our prediction (orange dot)
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Error history chart -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title" id="errorChartTitle">Prediction Error History</div>
+        <div class="chart-subtitle">
+          Error = actual − predicted · Closer to 0 is better
+        </div>
+      </div>
+      <div class="chart-container">
+        <canvas id="errorChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats footer -->
+  <div class="stats-footer">
+    <div class="stat-card">
+      <div class="stat-label">Model</div>
+      <div class="stat-value">XGBoost</div>
+      <div class="stat-sub">Trained on 150 days of data</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Prediction Horizon</div>
+      <div class="stat-value">5 minutes</div>
+      <div class="stat-sub">300 seconds ahead</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Features</div>
+      <div class="stat-value">23 indicators</div>
+      <div class="stat-sub">RSI, MACD, Ichimoku, Bollinger...</div>
+    </div>
+  </div>
+
+  <div class="last-updated" id="lastUpdated">Waiting for data...</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  const PAIRS = ['BTC/USD', 'ETH/USD', 'XRP/USD'];
+  let activePair = 'BTC/USD';
+  let latestData = null;
+  let priceChart = null;
+  let errorChart = null;
+  let countdownValue = 30;
+  let countdownTimer = null;
+
+  // ── Format helpers ─────────────────────────────────────────────────────────
+  function formatPrice(pair, price) {
+    if (price == null) return '—';
+    if (pair === 'XRP/USD') return '$' + price.toFixed(4);
+    return '$' + price.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function formatTime(isoStr) {
+    if (!isoStr) return '—';
+    return new Date(isoStr).toLocaleTimeString('en-US', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+
+  function formatError(error) {
+    if (error == null) return '—';
+    const sign = error >= 0 ? '+' : '';
+    return sign + '$' + Math.abs(error).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  // ── Build pair tabs ────────────────────────────────────────────────────────
+  function buildTabs() {
+    const container = document.getElementById('pairTabs');
+    container.innerHTML = '';
+    PAIRS.forEach(pair => {
+      const tab = document.createElement('button');
+      tab.className = `pair-tab ${pair === activePair ? 'active' : ''}`;
+      tab.textContent = pair;
+      tab.onclick = () => selectPair(pair);
+      container.appendChild(tab);
+    });
+  }
+
+  function selectPair(pair) {
+    activePair = pair;
+    buildTabs();
+    document.getElementById('priceChartTitle').textContent = `${pair} — Price History`;
+    document.getElementById('errorChartTitle').textContent = `${pair} — Error History`;
+    if (latestData) updateDisplay(latestData);
+  }
+
+  // ── Update metric cards ────────────────────────────────────────────────────
+  function updateDisplay(data) {
+    const priceData = data.latest_prices?.[activePair];
+    const prediction = data.predictions?.[activePair];
+    const errors = data.error_history?.[activePair] || [];
+    const latestErr = errors.length > 0 ? errors[errors.length - 1] : null;
+
+    // Current price
+    const price = priceData?.price;
+    document.getElementById('currentPrice').textContent = formatPrice(activePair, price);
+    document.getElementById('currentPriceTime').textContent =
+      priceData ? `At ${formatTime(priceData.timestamp_iso)}` : '—';
+
+    // Prediction
+    const predPrice = prediction?.prediction;
+    document.getElementById('predictionPrice').textContent = formatPrice(activePair, predPrice);
+    document.getElementById('predictionTime').textContent =
+      prediction ? `For ${formatTime(prediction.predicted_timestamp_iso)}` : '—';
+
+    // Prediction badge (up/down vs current)
+    const badge = document.getElementById('predictionBadge');
+    if (price && predPrice) {
+      const diff = predPrice - price;
+      const pct = (diff / price) * 100;
+      const dir = diff > 0 ? 'up' : diff < 0 ? 'down' : 'neutral';
+      const arrow = dir === 'up' ? '↑' : dir === 'down' ? '↓' : '→';
+      const sign = diff > 0 ? '+' : '';
+      badge.textContent = `${arrow} ${sign}${pct.toFixed(2)}% vs current`;
+      badge.className = `metric-badge ${dir}`;
+    } else {
+      badge.textContent = '—';
+      badge.className = 'metric-badge neutral';
+    }
+
+    // Latest error
+    const errEl = document.getElementById('latestError');
+    const errPctEl = document.getElementById('latestErrorPct');
+    if (latestErr) {
+      const err = latestErr.error;
+      errEl.textContent = formatError(err);
+      errEl.className = `metric-value ${err >= 0 ? 'up' : 'down'}`;
+      errPctEl.textContent = `${latestErr.pct_error.toFixed(2)}% · At ${formatTime(latestErr.actual_timestamp_iso)}`;
+    } else {
+      errEl.textContent = '—';
+      errEl.className = 'metric-value neutral';
+      errPctEl.textContent = 'No errors computed yet';
+    }
+
+    // MAE
+    const maeEl = document.getElementById('maeValue');
+    const countEl = document.getElementById('errorCount');
+    if (errors.length > 0) {
+      const mae = errors.reduce((sum, e) => sum + e.abs_error, 0) / errors.length;
+      maeEl.textContent = '$' + mae.toLocaleString('en-US', {maximumFractionDigits: 0});
+      countEl.textContent = errors.length;
+    } else {
+      maeEl.textContent = '—';
+      countEl.textContent = '0';
+    }
+
+    // Update charts
+    updatePriceChart(data);
+    updateErrorChart(data);
+  }
+
+  // ── Price chart ────────────────────────────────────────────────────────────
+  function initPriceChart() {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    priceChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: 'Actual Price',
+            data: [],
+            borderColor: '#388bfd',
+            backgroundColor: 'rgba(56, 139, 253, 0.08)',
+            borderWidth: 2,
+            pointRadius: 2,
+            fill: true,
+            tension: 0.3,
+          },
+          {
+            label: 'Prediction',
+            data: [],
+            borderColor: '#f0883e',
+            backgroundColor: 'rgba(240, 136, 62, 0.15)',
+            borderWidth: 0,
+            pointRadius: 7,
+            pointBackgroundColor: '#f0883e',
+            showLine: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#161b22',
+            borderColor: '#21262d',
+            borderWidth: 1,
+            titleColor: '#8b949e',
+            bodyColor: '#e6edf3',
+            padding: 10,
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#21262d' },
+            ticks: { color: '#8b949e', maxTicksLimit: 6, maxRotation: 0 }
+          },
+          y: {
+            grid: { color: '#21262d' },
+            ticks: {
+              color: '#8b949e',
+              callback: v => '$' + Number(v).toLocaleString('en-US', {maximumFractionDigits: 0})
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function updatePriceChart(data) {
+    if (!priceChart) return;
+    const history = data.price_history?.[activePair] || [];
+    const prediction = data.predictions?.[activePair];
+
+    const labels = history.map(h => formatTime(h.time));
+    const prices = history.map(h => h.price);
+    const predPoints = new Array(labels.length).fill(null);
+
+    if (prediction?.prediction && history.length > 0) {
+      labels.push(formatTime(prediction.predicted_timestamp_iso));
+      prices.push(null);
+      predPoints.push(prediction.prediction);
+    }
+
+    priceChart.data.labels = labels;
+    priceChart.data.datasets[0].data = prices;
+    priceChart.data.datasets[1].data = predPoints;
+    priceChart.update('none');
+  }
+
+  // ── Error chart ────────────────────────────────────────────────────────────
+  function initErrorChart() {
+    const ctx = document.getElementById('errorChart').getContext('2d');
+    errorChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Error ($)',
+          data: [],
+          backgroundColor: [],
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#161b22',
+            borderColor: '#21262d',
+            borderWidth: 1,
+            titleColor: '#8b949e',
+            bodyColor: '#e6edf3',
+            padding: 10,
+            callbacks: {
+              label: ctx => ` Error: ${formatError(ctx.raw)}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#21262d' },
+            ticks: { color: '#8b949e', maxTicksLimit: 8, maxRotation: 0 }
+          },
+          y: {
+            grid: { color: '#21262d' },
+            ticks: {
+              color: '#8b949e',
+              callback: v => '$' + Number(v).toLocaleString('en-US', {maximumFractionDigits: 0})
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function updateErrorChart(data) {
+    if (!errorChart) return;
+    const errors = data.error_history?.[activePair] || [];
+
+    const labels = errors.map(e => formatTime(e.actual_timestamp_iso));
+    const values = errors.map(e => e.error);
+    const colors = values.map(v =>
+      v >= 0 ? 'rgba(63, 185, 80, 0.7)' : 'rgba(248, 81, 73, 0.7)'
+    );
+
+    errorChart.data.labels = labels;
+    errorChart.data.datasets[0].data = values;
+    errorChart.data.datasets[0].backgroundColor = colors;
+    errorChart.update('none');
+  }
+
+  // ── Countdown ──────────────────────────────────────────────────────────────
+  function startCountdown() {
+    countdownValue = 30;
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(() => {
+      countdownValue--;
+      const el = document.getElementById('countdown');
+      if (el) el.textContent = `Next update in ${countdownValue}s`;
+      if (countdownValue <= 0) countdownValue = 30;
+    }, 1000);
+  }
+
+  // ── WebSocket ──────────────────────────────────────────────────────────────
+  function setStatus(connected) {
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    dot.className = `status-dot ${connected ? 'connected' : 'disconnected'}`;
+    text.textContent = connected ? 'Connected' : 'Reconnecting...';
+  }
+
+  function connectWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+
+    ws.onopen = () => {
+      setStatus(true);
+      console.log('WebSocket connected to monitoring-service');
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'ping') return;
+      latestData = data;
+      updateDisplay(data);
+      startCountdown();
+      document.getElementById('lastUpdated').textContent =
+        `Last updated: ${new Date().toLocaleTimeString()}`;
+    };
+
+    ws.onclose = () => {
+      setStatus(false);
+      setTimeout(connectWebSocket, 5000);
+    };
+
+    ws.onerror = err => {
+      console.error('WebSocket error:', err);
+      ws.close();
+    };
+  }
+
+  // ── Initialise ─────────────────────────────────────────────────────────────
+  buildTabs();
+  initPriceChart();
+  initErrorChart();
+  selectPair('BTC/USD');
+  connectWebSocket();
+</script>
+</body>
+</html>
