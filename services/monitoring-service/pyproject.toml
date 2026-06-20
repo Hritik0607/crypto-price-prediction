@@ -11,4 +11,5 @@ dependencies = [
     "loguru>=0.7.3",
     "pydantic-settings>=2.0.0",
     "confluent-kafka>=2.0.0",
+    "comet-ml>=3.57.3",
 ]

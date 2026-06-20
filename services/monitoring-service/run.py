@@ -8,6 +8,13 @@ from typing import List
 
 from config import config
 from confluent_kafka import Consumer, KafkaError
+from drift import (
+    compute_concept_drift,
+    compute_data_drift,
+    ensure_model_drift_index,
+    get_drift_alerts_from_es,
+    load_training_stats,
+)
 from elasticsearch import Elasticsearch
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
@@ -153,6 +160,9 @@ def check_and_compute_error(pair: str, actual_price: float, window_end_ms: int):
         # Update in-memory history for the dashboard
         error_history[pair].append(error_doc)
 
+        # Check for concept drift after each error is computed
+        compute_concept_drift(pair, error_history, es)
+
         logger.info(
             f'Error computed for {pair}: '
             f'predicted={predicted_price:.2f}, '
@@ -207,6 +217,8 @@ def process_candle(candle: dict):
 
     # Check if a prediction targeted this candle and compute error
     check_and_compute_error(pair, close, window_end_ms)
+    # Check for data drift on this candle's features
+    compute_data_drift(candle, es)
 
 
 # ── Kafka consumer background thread ──────────────────────────────────────────
@@ -349,6 +361,7 @@ def build_payload(msg_type: str = 'update') -> dict:
         'error_history': {
             pair: list(history) for pair, history in error_history.items()
         },
+        'drift_alerts': get_drift_alerts_from_es(es),
     }
 
 
@@ -379,6 +392,8 @@ async def startup_event():
     """
     # Create ElasticSearch index for errors
     ensure_model_errors_index()
+    ensure_model_drift_index(es)
+    load_training_stats()
 
     # Start Kafka consumer in a daemon thread
     # daemon=True means it dies when the main process dies

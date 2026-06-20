@@ -247,6 +247,60 @@
       font-size: 0.75rem;
       margin-top: 16px;
     }
+
+    /* ── Drift alert banner ── */
+    .drift-banner {
+      display: none;
+      margin-bottom: 24px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .drift-banner.visible {
+      display: block;
+    }
+
+    .drift-alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border-left: 4px solid;
+      margin-bottom: 2px;
+      font-size: 0.85rem;
+    }
+
+    .drift-alert.warning {
+      background: #2d2a1a;
+      border-color: #d29922;
+      color: #d29922;
+    }
+
+    .drift-alert.critical {
+      background: #2d1b1b;
+      border-color: #f85149;
+      color: #f85149;
+    }
+
+    .drift-alert-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .drift-alert-body {
+      flex: 1;
+    }
+
+    .drift-alert-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .drift-alert-detail {
+      font-size: 0.78rem;
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
@@ -271,6 +325,9 @@
 
   <!-- Pair tabs -->
   <div class="pair-tabs" id="pairTabs"></div>
+
+  <!-- Drift alert banner -->
+  <div class="drift-banner" id="driftBanner"></div>
 
   <!-- Main metrics -->
   <div class="metrics-row">
@@ -383,6 +440,51 @@
     });
   }
 
+  function updateDriftBanner(driftAlerts) {
+    const banner = document.getElementById('driftBanner');
+
+    if (!driftAlerts || driftAlerts.length === 0) {
+      banner.classList.remove('visible');
+      banner.innerHTML = '';
+      return;
+    }
+
+    // Only show alerts for active pair or pair-independent alerts
+    const relevantAlerts = driftAlerts.filter(alert =>
+      !alert.pair || alert.pair === activePair
+    );
+
+    if (relevantAlerts.length === 0) {
+      banner.classList.remove('visible');
+      banner.innerHTML = '';
+      return;
+    }
+
+    const icon = {
+      warning:  '⚠️',
+      critical: '🔴',
+    };
+
+    const title = {
+      data:    'DATA DRIFT DETECTED',
+      concept: 'CONCEPT DRIFT DETECTED',
+    };
+
+    banner.innerHTML = relevantAlerts.map(alert => `
+      <div class="drift-alert ${alert.severity}">
+        <div class="drift-alert-icon">${icon[alert.severity] || '⚠️'}</div>
+        <div class="drift-alert-body">
+          <div class="drift-alert-title">
+            ${title[alert.drift_type] || 'DRIFT DETECTED'} — ${alert.severity.toUpperCase()}
+          </div>
+          <div class="drift-alert-detail">${alert.details}</div>
+        </div>
+      </div>
+    `).join('');
+
+    banner.classList.add('visible');
+  }
+
   // ── Build pair tabs ────────────────────────────────────────────────────────
   function buildTabs() {
     const container = document.getElementById('pairTabs');
@@ -410,6 +512,8 @@
     const prediction = data.predictions?.[activePair];
     const errors = data.error_history?.[activePair] || [];
     const latestErr = errors.length > 0 ? errors[errors.length - 1] : null;
+    // Update drift alerts banner
+    updateDriftBanner(data.drift_alerts || []);
 
     // Current price
     const price = priceData?.price;
