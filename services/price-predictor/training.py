@@ -1,3 +1,4 @@
+import json
 import os
 
 import comet_ml
@@ -278,6 +279,26 @@ def train(
             'y_test': y_test.shape,
         }
     )
+
+    # ── Save training feature stats for drift detection ────────────────────────
+    # These are the REAL distributions from training data.
+    # monitoring-service loads this file to detect when live features
+    # drift significantly from what the model was trained on.
+    feature_stats = {}
+    for col in X_train.columns:
+        feature_stats[col] = {
+            'mean': float(X_train[col].mean()),
+            'std': float(X_train[col].std()),
+            'p5': float(X_train[col].quantile(0.05)),
+            'p95': float(X_train[col].quantile(0.95)),
+        }
+
+    stats_path = os.path.join(os.path.dirname(__file__), 'training_feature_stats.json')
+    with open(stats_path, 'w') as f:
+        json.dump(feature_stats, f, indent=2)
+    experiment.log_asset(stats_path, file_name='training_feature_stats.json')
+    logger.info(f'Saved training feature stats to {stats_path}')
+    logger.info(f'Features tracked for drift: {list(feature_stats.keys())}')
 
     # 3. Evaluate quick baseline models
     y_test_pred_dummy = pd.Series([0] * len(y_test), index=y_test.index)
