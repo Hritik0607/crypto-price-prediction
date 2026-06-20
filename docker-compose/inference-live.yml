@@ -43,6 +43,7 @@ services:
       - redpanda_network
     env_file:
       - ../services/monitoring-service/settings.env
+      - ../services/monitoring-service/comet_ml_credentials.env
     environment:
       - KAFKA_BROKER_ADDRESS=redpanda:9092
       - ELASTICSEARCH_URL=http://elasticsearch:9200
