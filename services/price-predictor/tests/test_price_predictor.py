@@ -108,9 +108,9 @@ class TestPredictionDeltaFormula:
             model_delta=-200.0,
             current_price=65000.0,
         )
-        assert (
-            abs(prediction - 64800.0) < 0.01
-        ), f'Expected $64,800, got ${prediction:.2f}'
+        assert abs(prediction - 64800.0) < 0.01, (
+            f'Expected $64,800, got ${prediction:.2f}'
+        )
 
     def test_zero_delta_returns_current_price(self):
         """
@@ -121,9 +121,9 @@ class TestPredictionDeltaFormula:
             model_delta=0.0,
             current_price=65000.0,
         )
-        assert (
-            abs(prediction - 65000.0) < 0.01
-        ), f'Expected $65,000, got ${prediction:.2f}'
+        assert abs(prediction - 65000.0) < 0.01, (
+            f'Expected $65,000, got ${prediction:.2f}'
+        )
 
     def test_prediction_not_equal_to_raw_delta(self):
         """

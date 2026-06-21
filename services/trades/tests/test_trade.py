@@ -41,9 +41,9 @@ class TestTimestampUTCFix:
         Verifies conversion is correct for a real-world value.
         """
         result = Trade._milliseconds2datestr(1_000_000_000_000)
-        assert (
-            result == '2001-09-09T01:46:40.000000Z'
-        ), f'Timestamp conversion wrong: got {result}'
+        assert result == '2001-09-09T01:46:40.000000Z', (
+            f'Timestamp conversion wrong: got {result}'
+        )
 
     def test_datestr2milliseconds_parses_utc(self):
         """
@@ -70,9 +70,9 @@ class TestTimestampUTCFix:
         datestr = Trade._milliseconds2datestr(original_ms)
         recovered_ms = Trade._datestr2milliseconds(datestr)
 
-        assert (
-            recovered_ms == original_ms
-        ), f'Roundtrip failed: {original_ms} → {datestr} → {recovered_ms}'
+        assert recovered_ms == original_ms, (
+            f'Roundtrip failed: {original_ms} → {datestr} → {recovered_ms}'
+        )
 
     def test_datestr_ends_with_z(self):
         """
@@ -129,9 +129,9 @@ class TestTradeFromKrakenRestAPI:
             volume=0.5,
             timestamp_sec=0.0,
         )
-        assert (
-            trade.timestamp == '1970-01-01T00:00:00.000000Z'
-        ), f'Expected UTC epoch, got {trade.timestamp}'
+        assert trade.timestamp == '1970-01-01T00:00:00.000000Z', (
+            f'Expected UTC epoch, got {trade.timestamp}'
+        )
 
 
 class TestTradeFromKrakenWebsocketAPI:

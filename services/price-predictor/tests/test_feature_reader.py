@@ -246,9 +246,9 @@ class TestPriceDeltaTarget:
         )
 
         assert len(result) > 0
-        assert (
-            abs(result.iloc[0]['target']) < 0.01
-        ), f'Target should be ~0 when price unchanged. Got {result.iloc[0]["target"]}'
+        assert abs(result.iloc[0]['target']) < 0.01, (
+            f'Target should be ~0 when price unchanged. Got {result.iloc[0]["target"]}'
+        )
 
 
 # ── Tests: add_target_column=False (inference mode) ───────────────────────────
@@ -268,9 +268,9 @@ class TestInferenceMode:
             sample_data.copy(),
             add_target_column=False,
         )
-        assert (
-            'target' not in result.columns
-        ), 'target column should not exist in inference mode'
+        assert 'target' not in result.columns, (
+            'target column should not exist in inference mode'
+        )
 
     def test_all_rows_preserved_in_inference_mode(self, reader, sample_data):
         """
@@ -305,9 +305,9 @@ class TestPreprocessingStructure:
             add_target_column=False,
         )
         pair_cols = [c for c in result.columns if c.startswith('pair')]
-        assert (
-            len(pair_cols) == 0
-        ), f'pair columns should be dropped but found: {pair_cols}'
+        assert len(pair_cols) == 0, (
+            f'pair columns should be dropped but found: {pair_cols}'
+        )
 
     def test_window_end_ms_renamed_to_timestamp_ms(self, reader, sample_data):
         """
@@ -317,12 +317,12 @@ class TestPreprocessingStructure:
             sample_data.copy(),
             add_target_column=False,
         )
-        assert (
-            'timestamp_ms' in result.columns
-        ), 'window_end_ms should be renamed to timestamp_ms'
-        assert (
-            'window_end_ms' not in result.columns
-        ), 'window_end_ms should not exist after rename'
+        assert 'timestamp_ms' in result.columns, (
+            'window_end_ms should be renamed to timestamp_ms'
+        )
+        assert 'window_end_ms' not in result.columns, (
+            'window_end_ms should not exist after rename'
+        )
 
     def test_output_sorted_by_timestamp(self, reader, sample_data):
         """
@@ -338,9 +338,9 @@ class TestPreprocessingStructure:
         )
 
         timestamps = result['timestamp_ms'].tolist()
-        assert timestamps == sorted(
-            timestamps
-        ), 'Output must be sorted by timestamp_ms ascending'
+        assert timestamps == sorted(timestamps), (
+            'Output must be sorted by timestamp_ms ascending'
+        )
 
     def test_feature_columns_present(self, reader, sample_data):
         """
