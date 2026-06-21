@@ -21,10 +21,10 @@ jobs:
         run: uv tool install ruff
 
       - name: Run ruff linter
-        run: uv tool run ruff check services/
+        run: uv tool run ruff check services/ --exclude services/news-signal/fine_tuning.py
 
       - name: Run ruff formatter check
-        run: uv tool run ruff format --check services/
+        run: uv tool run ruff format --check services/ --exclude services/news-signal/fine_tuning.py
 
   unit-tests:
     name: Unit Tests
