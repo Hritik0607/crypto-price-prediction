@@ -14,7 +14,7 @@ All ES and CometML calls are mocked — pure math only.
 """
 
 from collections import defaultdict, deque
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -39,12 +39,29 @@ def mock_config(monkeypatch):
     mock_creds.api_key = 'mock_api_key'
     mock_creds.workspace = 'mock_workspace'
 
-    import drift
+    # Mock the entire config module BEFORE drift.py imports it
+    mock_config_module = MagicMock()
+    mock_config_module.config = mock_cfg
+    mock_config_module.comet_ml_credentials = mock_creds
 
-    monkeypatch.setattr(drift, 'config', mock_cfg)
-    monkeypatch.setattr(drift, 'comet_ml_credentials', mock_creds)
+    with patch.dict(
+        'sys.modules',
+        {
+            'comet_ml': MagicMock(),
+            'config': mock_config_module,
+        },
+    ):
+        # Now import drift — it will get our mocked config
+        import importlib
 
-    yield mock_cfg
+        import drift as drift_module
+
+        importlib.reload(drift_module)
+
+        monkeypatch.setattr(drift_module, 'config', mock_cfg)
+        monkeypatch.setattr(drift_module, 'comet_ml_credentials', mock_creds)
+
+        yield mock_cfg
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
