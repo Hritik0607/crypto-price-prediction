@@ -227,3 +227,4 @@ verify_feature_group.py
 .env.local
 data/
 cursors/
+*.json

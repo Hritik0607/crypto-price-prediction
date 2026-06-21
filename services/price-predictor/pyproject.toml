@@ -13,7 +13,7 @@ dependencies = [
     "loguru>=0.7.3",
     "numpy==1.26.4",
     "optuna>=4.8.0",
-    "pandas>=1.5.3",
+    "pandas>=2.0.0",
     "pyarrow>=23.0.1",
     "pydantic-settings>=2.10.1",
     "quixstreams>=3.23.1",
