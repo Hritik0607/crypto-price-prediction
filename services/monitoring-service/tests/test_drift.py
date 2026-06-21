@@ -20,9 +20,8 @@ import pytest
 
 # ── Mock config before importing drift ────────────────────────────────────────
 
-
 @pytest.fixture(autouse=True)
-def mock_config():
+def mock_config(monkeypatch):
     """Mock config and comet_ml_credentials for all tests."""
     mock_cfg = MagicMock()
     mock_cfg.drift_z_threshold = 3.0
@@ -39,12 +38,11 @@ def mock_config():
     mock_creds.api_key = 'mock_api_key'
     mock_creds.workspace = 'mock_workspace'
 
-    with patch.dict('sys.modules', {'comet_ml': MagicMock()}):
-        with (
-            patch('drift.config', mock_cfg),
-            patch('drift.comet_ml_credentials', mock_creds),
-        ):
-            yield mock_cfg
+    import drift
+    monkeypatch.setattr(drift, 'config', mock_cfg)
+    monkeypatch.setattr(drift, 'comet_ml_credentials', mock_creds)
+
+    yield mock_cfg
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
