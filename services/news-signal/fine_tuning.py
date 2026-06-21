@@ -1,13 +1,14 @@
 import os
+
 os.environ['UNSLOTH_RETURN_LOGITS'] = '1'
-from unsloth import FastLanguageModel, is_bfloat16_supported
 from typing import Literal, Optional, Tuple
 
 import comet_ml
 from datasets import Dataset, load_dataset
 from loguru import logger
-from transformers import AutoTokenizer, TrainingArguments
-from trl import SFTTrainer, SFTConfig
+from transformers import AutoTokenizer
+from trl import SFTConfig, SFTTrainer
+from unsloth import FastLanguageModel, is_bfloat16_supported
 
 # chat template we use to format the data we feed to the model
 alpaca_prompt = """Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
@@ -184,7 +185,7 @@ def fine_tune(
             output_dir='outputs',
             report_to='comet_ml',  # Use this for WandB etc
             eval_strategy='epoch',
-            eos_token=None
+            eos_token=None,
         ),
     )
 
