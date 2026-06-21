@@ -350,7 +350,7 @@ def train(
     results = {}
 
     for model_name, model_obj in models_to_try.items():
-        logger.info(f'\n{"="*50}')
+        logger.info(f'\n{"=" * 50}')
         logger.info(f'Training {model_name}...')
 
         model_obj.fit(
@@ -412,7 +412,7 @@ def train(
         }
 
     # ── Comparison table ────────────────────────────────────────────────────────
-    logger.info(f'\n{"="*50}')
+    logger.info(f'\n{"=" * 50}')
     logger.info('FINAL MODEL COMPARISON:')
     logger.info(f'  Dummy baseline: ${mae_best_baseline:.2f}')
     for name, res in sorted(results.items(), key=lambda x: x[1]['mae']):
@@ -445,7 +445,7 @@ def train(
     for fold_num, fold_mae in enumerate(wf_mae_scores, 1):
         experiment.log_metric(f'mae_walk_forward_fold_{fold_num}', fold_mae)
     logger.info(
-        f'Walk-forward MAE: {wf_avg_mae:.2f} ' f'(single split MAE: {best_mae:.2f})'
+        f'Walk-forward MAE: {wf_avg_mae:.2f} (single split MAE: {best_mae:.2f})'
     )
 
     # ── Save and register best model ────────────────────────────────────────────

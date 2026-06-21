@@ -45,8 +45,7 @@ if API_KEY:
     logger.info('API key authentication ENABLED')
 else:
     logger.warning(
-        'API key authentication DISABLED — '
-        'set API_KEY in settings.env for production'
+        'API key authentication DISABLED — set API_KEY in settings.env for production'
     )
 
 

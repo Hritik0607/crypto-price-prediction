@@ -47,7 +47,7 @@ class ParquetSink(BatchingSink):
             self.output_dir / f'{feature_group_name}_v{feature_group_version}.parquet'
         )
 
-        logger.info(f'ParquetSink initialized. ' f'Writing to: {self.file_path}')
+        logger.info(f'ParquetSink initialized. Writing to: {self.file_path}')
 
     def write(self, batch: SinkBatch):
         """

@@ -121,7 +121,7 @@ class KrakenRestAPISinglePair(TradesAPI):
             cursor = data['since_timestamp_ns']
             saved_at = data.get('saved_at', 'unknown')
             logger.info(
-                f'Loaded cursor for {self.pair}: {cursor} ' f'(saved at {saved_at})'
+                f'Loaded cursor for {self.pair}: {cursor} (saved at {saved_at})'
             )
             return int(cursor)
         except Exception as e:
