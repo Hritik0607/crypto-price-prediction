@@ -13,3 +13,8 @@ dependencies = [
     "confluent-kafka>=2.0.0",
     "comet-ml>=3.57.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

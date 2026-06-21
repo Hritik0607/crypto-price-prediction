@@ -9,3 +9,8 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "quixstreams>=3.23.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
